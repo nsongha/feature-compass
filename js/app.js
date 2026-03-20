@@ -203,6 +203,7 @@ const App = (() => {
     dgInjectToContext() { DG.injectToContext(); },
     dgRemoveUpload(i) { DG.removeUpload(i); },
     dgSkipWithUploads() { DG.skipWithUploads(); },
+    dgExpandQ(secId) { DG.expandQ(secId); },
 
     // ── Exposed utils for inline handlers ──
     esc,

@@ -323,6 +323,20 @@ input,textarea,select,button{font-family:inherit;font-size:inherit}
 .dg-q-rdot{width:5px;height:5px;border-radius:50%;background:#fff;display:none}
 .dg-q-opt.sel .dg-q-rdot{display:block}
 
+/* COLLAPSED Q */
+.dg-q-collapsed{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--r);margin-bottom:4px;cursor:pointer;transition:all .15s}
+.dg-q-collapsed:hover{background:var(--sur2);border-color:var(--bdm)}
+.dg-q-check{color:var(--grn);font-weight:700;font-size:11px;flex-shrink:0}
+.dg-q-collapsed-title{font-size:11px;color:var(--tx2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dg-q-collapsed-answer{font-size:10px;font-weight:600;color:var(--tx);background:var(--gbg);padding:2px 8px;border-radius:10px;flex-shrink:0;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* LOCKED NAV */
+.dg-nav-item.locked{opacity:.45;cursor:not-allowed}
+.dg-nav-item.locked .dg-nav-dot{background:var(--bd)}
+.dg-nav-item.generating{opacity:.7;cursor:default}
+.dg-nav-item.generating .dg-nav-dot{background:var(--gold);animation:pulse .8s infinite alternate}
+@keyframes pulse{from{opacity:.3}to{opacity:1}}
+
 /* PREVIEW */
 .dg-md-pre{font-size:11px;line-height:1.7;color:var(--tx);font-family:var(--mono);white-space:pre-wrap;word-break:break-word;max-height:400px;overflow-y:auto;background:var(--sur2);padding:12px;border-radius:var(--r)}
 

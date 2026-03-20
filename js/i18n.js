@@ -117,6 +117,7 @@ const I18nModule = (() => {
       dgInjectContext: 'Use as Project Context', dgContextInjected: 'Docs added to Project Context',
       dgDocsImported: 'Docs imported to context', dgCopied: 'Copied!',
       dgNoPlan: 'Run analysis first', dgDescTooShort: 'Description too short (min 20 chars)',
+      dgLocked: 'Locked', dgNeedsBefore: 'Complete first', dgUnlocking: 'Unlocking',
       // Impact Map
       pageImpactMap: '🗺️ Impact Map',
       imTitle: 'Document Impact Map',
@@ -248,6 +249,7 @@ const I18nModule = (() => {
       dgInjectContext: 'Dùng làm Context', dgContextInjected: 'Đã thêm docs vào Context',
       dgDocsImported: 'Docs đã import vào context', dgCopied: 'Đã copy!',
       dgNoPlan: 'Cần phân tích trước', dgDescTooShort: 'Mô tả quá ngắn (tối thiểu 20 ký tự)',
+      dgLocked: 'Đang khóa', dgNeedsBefore: 'Hoàn thành trước', dgUnlocking: 'Đang mở khóa',
       // Impact Map
       pageImpactMap: '🗺️ Bản đồ ảnh hưởng',
       imTitle: 'Bản đồ ảnh hưởng tài liệu',

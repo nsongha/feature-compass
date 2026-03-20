@@ -27,9 +27,32 @@ const DocgenModule = (() => {
       state.docgen = {
         projectDesc: '', analysis: null, selectedDocs: [],
         docs: {}, crossCheck: null, currentStep: 1, currentDoc: null,
-        uploadedDocs: []
+        uploadedDocs: [], depGraph: {}, _generating: {}
       };
     }
+    // Backfill for older saved state
+    if (!state.docgen.depGraph) state.docgen.depGraph = {};
+    if (!state.docgen._generating) state.docgen._generating = {};
+  }
+
+  /** Check if a doc is unlocked (all deps completed with markdown) */
+  function isUnlocked(d, key) {
+    const deps = d.depGraph[key] || [];
+    return deps.every(dep => d.docs[dep]?.markdown);
+  }
+
+  /** Check if doc has all Q&A answered */
+  function isAllAnswered(doc) {
+    if (!doc?.sections?.length) return false;
+    return doc.sections.every(s => doc.answers[s.id] != null);
+  }
+
+  /** Get completed markdown context from finished docs */
+  function getCompletedDocsContext(d) {
+    return Object.entries(d.docs)
+      .filter(([, v]) => v.markdown)
+      .map(([k, v]) => `--- ${DOC_TYPES[k]?.name} ---\n${v.markdown}`)
+      .filter(Boolean).join('\n\n');
   }
 
   /** Get docgen state shortcut */
@@ -165,9 +188,25 @@ const DocgenModule = (() => {
       const dt = DOC_TYPES[k];
       const doc = d.docs[k];
       const done = doc?.markdown ? true : false;
+      const locked = !isUnlocked(d, k);
+      const generating = d._generating[k];
       const active = d.currentDoc === k;
-      return `<button class="dg-nav-item${active?' active':''}${done?' done':''}" onclick="App.dgSelectDoc('${k}')">
-        <span class="dg-nav-dot"></span>${dt?.icon || ''} ${dt?.name || k}
+      const deps = d.depGraph[k] || [];
+      const missingDeps = deps.filter(dep => !d.docs[dep]?.markdown).map(dep => DOC_TYPES[dep]?.name || dep);
+
+      let statusIcon = '';
+      let cls = '';
+      if (done) { statusIcon = ''; cls = ' done'; }
+      else if (generating) { statusIcon = ' ⏳'; cls = ' generating'; }
+      else if (locked) { statusIcon = ' 🔒'; cls = ' locked'; }
+
+      const tooltip = locked && missingDeps.length
+        ? ` title="${esc(t('dgNeedsBefore'))}: ${esc(missingDeps.join(', '))}"`
+        : '';
+
+      return `<button class="dg-nav-item${active?' active':''}${cls}"
+        ${locked ? 'disabled' : `onclick="App.dgSelectDoc('${k}')"`}${tooltip}>
+        <span class="dg-nav-dot"></span>${dt?.icon || ''} ${dt?.name || k}${statusIcon}
       </button>`;
     }).join('');
 
@@ -182,17 +221,45 @@ const DocgenModule = (() => {
   function renderDocContent(d) {
     const key = d.currentDoc;
     if (!key) return `<div class="empty-state" style="height:40vh"><p>${esc(t('dgSelectDoc'))}</p></div>`;
+
+    // Locked doc
+    if (!isUnlocked(d, key)) {
+      const deps = (d.depGraph[key] || []).filter(dep => !d.docs[dep]?.markdown);
+      const depNames = deps.map(dep => DOC_TYPES[dep]?.name || dep);
+      return `<div class="empty-state" style="height:40vh">
+        <div style="font-size:32px;margin-bottom:8px">🔒</div>
+        <h2>${esc(t('dgLocked'))}</h2>
+        <p>${esc(t('dgNeedsBefore'))}: <strong>${esc(depNames.join(', '))}</strong></p>
+      </div>`;
+    }
+
     const doc = d.docs[key];
     const dt = DOC_TYPES[key];
     if (!doc || !doc.sections) return `<div class="loading-wrap"><svg class="loading-spin" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10" opacity=".2"/><path d="M12 2a10 10 0 019.5 7"/></svg><div class="loading-text">${esc(t('dgGeneratingQs'))}</div></div>`;
 
     const sections = doc.sections;
+    // Find first unanswered index for auto-expand
+    const firstUnanswered = sections.findIndex(s => doc.answers[s.id] == null);
+
     let html = `<div style="font-size:15px;font-weight:600;margin-bottom:3px">${dt?.icon || ''} ${doc.title || dt?.name}</div>
       <div style="font-size:11px;color:var(--tx2);margin-bottom:14px">${sections.length} ${esc(t('dgDecisions'))}</div>`;
 
     sections.forEach((sec, i) => {
       const answered = doc.answers[sec.id] != null;
+      const isExpanded = !answered || i === firstUnanswered || d._expandedQ === sec.id;
+      const selectedOpt = answered ? sec.options?.[doc.answers[sec.id]] : null;
       const tagColors = { recommended: 'background:var(--gbg);color:var(--gtx)', alternative: 'background:var(--abg);color:var(--atx)', advanced: 'background:var(--bbg);color:var(--btx)' };
+
+      if (answered && !isExpanded) {
+        // Collapsed answered question — click to expand
+        html += `<div class="dg-q-collapsed" onclick="App.dgExpandQ('${sec.id}')">
+          <span class="dg-q-check">✓</span>
+          <span class="dg-q-collapsed-title">${esc(t('dgQuestion'))} ${i+1}: ${esc(sec.question)}</span>
+          <span class="dg-q-collapsed-answer">${esc(selectedOpt?.label || '—')}</span>
+        </div>`;
+        return;
+      }
+
       html += `<div class="sec" id="dg-q-${sec.id}">
         <div class="sec-label">${esc(t('dgQuestion'))} ${i+1}/${sections.length}${answered ? ' · ✓' : ''}</div>
         <div style="font-size:13px;font-weight:500;line-height:1.5;margin-bottom:12px">${esc(sec.question)}</div>
@@ -216,7 +283,7 @@ const DocgenModule = (() => {
       </div>`;
     });
 
-    const allAnswered = sections.every(s => doc.answers[s.id] != null);
+    const allAnswered = isAllAnswered(doc);
     html += `<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
       <button class="btn-s btn-p" onclick="App.dgGenerateMarkdown('${key}')" ${!allAnswered?'disabled':''}>${allAnswered ? esc(t('dgGenerate')) : esc(t('dgAnswerAll'))}</button>
     </div>`;
@@ -228,6 +295,14 @@ const DocgenModule = (() => {
       </div>`;
     }
     return html;
+  }
+
+  /** Expand a collapsed question */
+  function expandQ(secId) {
+    const d = dg();
+    d._expandedQ = secId;
+    const main = document.getElementById('dg-builder-main');
+    if (main) main.innerHTML = renderDocContent(d);
   }
 
   // ── STEP 4: CROSS CHECK ──
@@ -350,19 +425,25 @@ Analyze this project and recommend which documentation files are needed. Choose 
 - auth_flow: Authentication & authorization flow
 - deployment: Deployment strategy
 
+IMPORTANT: Also determine the creation order and dependency graph. Some docs must be completed before others (e.g. painpoints/decisions before PRD, PRD before data_schema). A doc should list its dependencies — docs that should be completed first to provide context.
+
 Return ONLY valid JSON (no markdown fences):
 {
   "project_summary": "<2-3 sentence summary>",
   "recommended_docs": [
     { "key": "<doc type key>", "reason": "<why needed>", "priority": "critical|important|nice_to_have" }
   ],
-  "suggested_order": ["<doc key in recommended creation order>"],
+  "suggested_order": ["<doc key in recommended creation order, dependencies first>"],
+  "dependency_graph": {
+    "<doc_key>": ["<dependency_doc_key>", ...]
+  },
   "notes": "<any important observations>"
 }`, 4000);
 
       const result = parseAIJson(text);
       d.analysis = result;
       d.selectedDocs = result.suggested_order || result.recommended_docs.map(r => r.key);
+      d.depGraph = result.dependency_graph || {};
       save();
       goStep(2);
       toast(t('dgAnalysisDone'), 'ok');
@@ -384,29 +465,43 @@ Return ONLY valid JSON (no markdown fences):
   async function startBuilder() {
     const d = dg();
     if (!d.selectedDocs.length) { toast(t('dgNoDocsSelected'), 'err'); return; }
-    const toGen = d.selectedDocs.filter(k => !d.docs[k]);
 
-    if (toGen.length) {
-      // Generate sections in PARALLEL (1 call per doc)
+    // Find docs that are unlocked (deps met) and not yet generated
+    const unlocked = d.selectedDocs.filter(k => !d.docs[k] && isUnlocked(d, k));
+
+    if (unlocked.length) {
       toast(t('dgGeneratingQs'), 'ok');
-      const allPrev = Object.entries(d.docs).map(([k, v]) =>
-        v.markdown ? `--- ${DOC_TYPES[k]?.name} ---\n${v.markdown}` : ''
-      ).filter(Boolean).join('\n\n');
-
-      const promises = toGen.map(key => generateDocSections(key, d.projectDesc, allPrev));
-      const results = await Promise.allSettled(promises);
-      results.forEach((r, i) => {
-        if (r.status === 'fulfilled' && r.value) {
-          d.docs[toGen[i]] = r.value;
-        } else if (r.status === 'rejected') {
-          toast(`${DOC_TYPES[toGen[i]]?.name}: ${r.reason?.message || 'Error'}`, 'err');
-        }
-      });
-      save();
+      await generateForDocs(unlocked);
     }
 
-    if (!d.currentDoc && d.selectedDocs.length) d.currentDoc = d.selectedDocs[0];
+    // Auto-select first unlocked doc
+    if (!d.currentDoc || !isUnlocked(d, d.currentDoc)) {
+      d.currentDoc = d.selectedDocs.find(k => isUnlocked(d, k) && d.docs[k]) || d.selectedDocs[0];
+    }
     goStep(3);
+  }
+
+  /** Generate questions for a list of docs (PARALLEL) */
+  async function generateForDocs(keys) {
+    const d = dg();
+    const prevDocs = getCompletedDocsContext(d);
+
+    // Mark as generating
+    keys.forEach(k => { d._generating[k] = true; });
+    render();
+
+    const promises = keys.map(key => generateDocSections(key, d.projectDesc, prevDocs));
+    const results = await Promise.allSettled(promises);
+    results.forEach((r, i) => {
+      delete d._generating[keys[i]];
+      if (r.status === 'fulfilled' && r.value) {
+        d.docs[keys[i]] = r.value;
+      } else if (r.status === 'rejected') {
+        toast(`${DOC_TYPES[keys[i]]?.name}: ${r.reason?.message || 'Error'}`, 'err');
+      }
+    });
+    save();
+    render();
   }
 
   async function generateDocSections(key, projectDesc, prevDocs) {
@@ -414,9 +509,9 @@ Return ONLY valid JSON (no markdown fences):
     const text = await callAnthropic(state.apiKey, state.model, `You are a senior architect helping create project documentation step by step.
 
 PROJECT: ${projectDesc}
-${prevDocs ? `\nALREADY CREATED DOCS:\n${prevDocs}\n` : ''}
+${prevDocs ? `\nALREADY COMPLETED DOCS (use these for context, reference them where relevant):\n${prevDocs}\n` : ''}
 
-For the document type "${dt.name}" (${dt.desc}), generate 3-6 key questions/sections that need to be decided. Each question should have 2-4 options to choose from.
+For the document type "${dt.name}" (${dt.desc}), generate 3-6 key questions/sections that need to be decided. Each question should have 2-4 options to choose from. Questions should be SPECIFIC to this project based on the context above.
 
 Return ONLY valid JSON (no markdown fences):
 {
@@ -438,7 +533,9 @@ Return ONLY valid JSON (no markdown fences):
 
   function selectDoc(key) {
     const d = dg();
+    if (!isUnlocked(d, key)) return; // Can't select locked doc
     d.currentDoc = key;
+    d._expandedQ = null;
     save();
     render();
   }
@@ -447,6 +544,7 @@ Return ONLY valid JSON (no markdown fences):
     const d = dg();
     if (!d.docs[docKey]) return;
     d.docs[docKey].answers[secId] = optIdx;
+    d._expandedQ = null; // Reset expanded, let auto-expand find next unanswered
     save();
     // Re-render only builder main
     const main = document.getElementById('dg-builder-main');
@@ -496,8 +594,23 @@ IMPORTANT: Return ONLY the markdown content, no JSON wrapping, no code fences ar
 
       doc.markdown = text.replace(/^```(?:markdown)?\n?/, '').replace(/\n?```$/, '');
       save();
-      render();
       toast(`${dt?.name} ${t('dgDone')}!`, 'ok');
+
+      // ── CASCADE UNLOCK: auto-gen questions for newly unlocked dependents ──
+      const newlyUnlocked = d.selectedDocs.filter(k => !d.docs[k] && isUnlocked(d, k));
+      if (newlyUnlocked.length) {
+        toast(`${t('dgUnlocking')} ${newlyUnlocked.map(k => DOC_TYPES[k]?.name).join(', ')}`, 'ok');
+        generateForDocs(newlyUnlocked); // fire-and-forget, will re-render
+      }
+
+      // Auto-advance to next unlocked doc without questions done
+      const nextDoc = d.selectedDocs.find(k => k !== docKey && isUnlocked(d, k) && (!d.docs[k]?.markdown));
+      if (nextDoc) {
+        d.currentDoc = nextDoc;
+        d._expandedQ = null;
+      }
+      save();
+      render();
     } catch (e) {
       toast(t('aiError') + e.message, 'err');
     }
@@ -666,6 +779,6 @@ Return ONLY valid JSON:
   return {
     DOC_TYPES, render, goStep, analyze, toggleDoc, startBuilder, selectDoc, answer, setNote,
     generateMarkdown, runCrossCheck, copyDoc, downloadDoc, downloadAll, injectToContext,
-    bindUpload, handleUploadFiles, removeUpload, skipWithUploads, reset
+    bindUpload, handleUploadFiles, removeUpload, skipWithUploads, reset, expandQ
   };
 })();
