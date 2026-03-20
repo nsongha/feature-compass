@@ -35,6 +35,10 @@ const DocgenModule = (() => {
     if (!state.docgen._generating) state.docgen._generating = {};
   }
 
+  // ── BUSY FLAG ── prevents navigation during AI calls
+  let _busy = false;
+  function setBusy(v) { _busy = v; }
+
   /** Check if a doc is unlocked (all deps completed with markdown) */
   function isUnlocked(d, key) {
     const deps = d.depGraph[key] || [];
@@ -81,16 +85,35 @@ const DocgenModule = (() => {
       { n:2, label: t('dgPlan') },
       { n:3, label: t('dgBuilder') },
       { n:4, label: t('dgCrossCheck') },
-      { n:5, label: t('dgExport') },
     ];
     return `<div class="dg-steps-nav">${steps.map(s => {
       const active = s.n === d.currentStep;
-      const done = s.n < d.currentStep;
-      const accessible = s.n <= d.currentStep || done;
-      return `<div class="dg-step-tab${active?' active':''}${done?' done':''}" 
-        ${accessible ? `onclick="App.dgGoStep(${s.n})"` : ''} 
-        style="${accessible ? 'cursor:pointer' : 'pointer-events:none'}">${s.n}. ${esc(s.label)}</div>`;
+      const done = stepDone(d, s.n);
+      const can = canGoStep(d, s.n);
+      const cls = active ? ' active' : done ? ' done' : !can ? ' locked' : '';
+      return `<div class="dg-step-tab${cls}" 
+        ${can && !_busy ? `onclick="App.dgGoStep(${s.n})"` : ''} 
+        ${can && !_busy ? 'style="cursor:pointer"' : 'style="pointer-events:none;opacity:.5"'}
+        ${!can ? `title="${esc(t('dgStepLocked'))}"` : ''}>${s.n}. ${esc(s.label)}${done ? ' ✓' : ''}</div>`;
     }).join('')}</div>`;
+  }
+
+  /** Check if step prerequisites are met */
+  function canGoStep(d, n) {
+    if (n === 1) return true;
+    if (n === 2) return !!(d.analysis || d.uploadedDocs?.length);
+    if (n === 3) return !!(d.selectedDocs.length || d.uploadedDocs?.length);
+    if (n === 4) return d.selectedDocs.some(k => d.docs[k]?.markdown);
+    return false;
+  }
+
+  /** Check if a step is fully completed */
+  function stepDone(d, n) {
+    if (n === 1) return !!(d.analysis || d.uploadedDocs?.length);
+    if (n === 2) return d.selectedDocs.length > 0 && d.currentStep > 2;
+    if (n === 3) return d.selectedDocs.every(k => d.docs[k]?.markdown);
+    if (n === 4) return !!d.crossCheck;
+    return false;
   }
 
   function renderStep(d) {
@@ -99,7 +122,6 @@ const DocgenModule = (() => {
       case 2: return renderDocsPlan(d);
       case 3: return renderBuilder(d);
       case 4: return renderCrossCheck(d);
-      case 5: return renderExport(d);
       default: return renderSetup(d);
     }
   }
@@ -448,9 +470,9 @@ const DocgenModule = (() => {
   // ── ACTIONS ──
 
   function goStep(n) {
+    if (_busy) return; // Block navigation during AI calls
     const d = dg();
-    if (n > 1 && !d.analysis && !d.uploadedDocs?.length) return;
-    if (n > 2 && !d.selectedDocs.length && !d.uploadedDocs?.length) return;
+    if (!canGoStep(d, n)) return;
     d.currentStep = n;
     save();
     render();
@@ -481,6 +503,7 @@ const DocgenModule = (() => {
     d._generating = {};
     save();
 
+    setBusy(true);
     const btn = document.getElementById('dg-btn-analyze');
     if (btn) { btn.disabled = true; btn.textContent = t('dgAnalyzing'); }
 
@@ -525,6 +548,7 @@ Return ONLY valid JSON (no markdown fences):
       toast(t('aiError') + e.message, 'err');
     }
     if (btn) { btn.disabled = false; btn.textContent = t('dgAnalyzeBtn'); }
+    setBusy(false);
   }
 
   function toggleDoc(key) {
@@ -539,6 +563,7 @@ Return ONLY valid JSON (no markdown fences):
   async function startBuilder() {
     const d = dg();
     if (!d.selectedDocs.length) { toast(t('dgNoDocsSelected'), 'err'); return; }
+    setBusy(true);
 
     // Find docs that are unlocked (deps met) and not yet generated
     const unlocked = d.selectedDocs.filter(k => !d.docs[k] && isUnlocked(d, k));
@@ -553,6 +578,7 @@ Return ONLY valid JSON (no markdown fences):
       d.currentDoc = d.selectedDocs.find(k => isUnlocked(d, k) && d.docs[k]) || d.selectedDocs[0];
     }
     goStep(3);
+    setBusy(false);
   }
 
   /** Generate questions for a list of docs (PARALLEL) */
@@ -638,7 +664,7 @@ Return ONLY valid JSON (no markdown fences):
     const d = dg();
     const doc = d.docs[docKey];
     const dt = DOC_TYPES[docKey];
-    if (!doc) return;
+    if (!doc || _busy) return;
 
     const answersSummary = doc.sections.map(sec => {
       const opt = sec.options?.[doc.answers[sec.id]];
@@ -651,6 +677,10 @@ Return ONLY valid JSON (no markdown fences):
       .map(([k, v]) => `--- ${DOC_TYPES[k]?.name} ---\n${v.markdown}`)
       .join('\n\n');
 
+    setBusy(true);
+    // Disable button immediately
+    const genBtn = document.querySelector(`[onclick*="dgGenerateMarkdown('${docKey}')"]`);
+    if (genBtn) { genBtn.disabled = true; genBtn.textContent = t('dgGenerating') + '...'; }
     toast(`${t('dgGenerating')} ${dt?.name}...`, 'ok');
 
     try {
@@ -668,25 +698,30 @@ IMPORTANT: Return ONLY the markdown content, no JSON wrapping, no code fences ar
 
       doc.markdown = text.replace(/^```(?:markdown)?\n?/, '').replace(/\n?```$/, '');
       save();
+      setBusy(false);
+      // Render IMMEDIATELY so user sees the preview
+      render();
       toast(`${dt?.name} ${t('dgDone')}!`, 'ok');
 
-      // ── CASCADE UNLOCK: auto-gen questions for newly unlocked dependents ──
+      // CASCADE UNLOCK (fire-and-forget, runs in background)
       const newlyUnlocked = d.selectedDocs.filter(k => !d.docs[k] && isUnlocked(d, k));
       if (newlyUnlocked.length) {
         toast(`${t('dgUnlocking')} ${newlyUnlocked.map(k => DOC_TYPES[k]?.name).join(', ')}`, 'ok');
-        generateForDocs(newlyUnlocked); // fire-and-forget, will re-render
+        generateForDocs(newlyUnlocked); // fire-and-forget
       }
 
-      // Auto-advance to next unlocked doc without questions done
+      // Auto-advance to next unlocked doc
       const nextDoc = d.selectedDocs.find(k => k !== docKey && isUnlocked(d, k) && (!d.docs[k]?.markdown));
       if (nextDoc) {
         d.currentDoc = nextDoc;
         d._expandedQ = null;
+        save();
+        render();
       }
-      save();
-      render();
     } catch (e) {
       toast(t('aiError') + e.message, 'err');
+      setBusy(false);
+      render();
     }
   }
 
@@ -698,6 +733,7 @@ IMPORTANT: Return ONLY the markdown content, no JSON wrapping, no code fences ar
       .join('\n\n');
     if (!docs) { toast(t('dgNoGenDocs'), 'err'); return; }
 
+    setBusy(true);
     const btn = document.getElementById('dg-btn-crosscheck');
     if (btn) { btn.disabled = true; btn.textContent = t('dgChecking'); }
 
@@ -730,6 +766,7 @@ Return ONLY valid JSON:
       toast(t('aiError') + e.message, 'err');
     }
     if (btn) { btn.disabled = false; btn.textContent = t('dgRunCheck'); }
+    setBusy(false);
   }
 
   // ── UPLOAD ──

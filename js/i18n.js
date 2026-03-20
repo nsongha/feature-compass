@@ -121,6 +121,7 @@ const I18nModule = (() => {
       dgLoadingHint: 'AI is crafting tailored questions based on your project context...',
       dgDocsCompleted: 'docs completed', dgCopy: 'Copy', dgDownload: 'Download', dgRegenerate: '↻ Regenerate',
       dgAllDone: 'All Documents Generated!', dgDocFiles: 'documents', dgTotal: 'total',
+      dgStepLocked: 'Complete previous step first',
       // Impact Map
       pageImpactMap: '🗺️ Impact Map',
       imTitle: 'Document Impact Map',
@@ -256,6 +257,7 @@ const I18nModule = (() => {
       dgLoadingHint: 'AI đang tạo câu hỏi phù hợp dựa trên context dự án...',
       dgDocsCompleted: 'docs hoàn tất', dgCopy: 'Copy', dgDownload: 'Tải', dgRegenerate: '↻ Tạo lại',
       dgAllDone: 'Tất cả tài liệu đã hoàn thành!', dgDocFiles: 'tài liệu', dgTotal: 'tổng',
+      dgStepLocked: 'Hoàn thành bước trước đã',
       // Impact Map
       pageImpactMap: '🗺️ Bản đồ ảnh hưởng',
       imTitle: 'Bản đồ ảnh hưởng tài liệu',
