@@ -474,6 +474,11 @@ const DocgenModule = (() => {
     if (!desc || desc.length < 20) { toast(t('dgDescTooShort'), 'err'); return; }
     if (!state.apiKey) { toast(t('setApiKey'), 'err'); return; }
     d.projectDesc = desc;
+    // Clear old docs to prevent stale content from previous projects
+    d.docs = {};
+    d.crossCheck = null;
+    d.currentDoc = null;
+    d._generating = {};
     save();
 
     const btn = document.getElementById('dg-btn-analyze');
