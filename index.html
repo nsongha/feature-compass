@@ -21,6 +21,10 @@
     Feature<em>Compass</em>
   </div>
   <div class="hdr-sub" id="hdr-sub">Evaluate features before they hit the backlog</div>
+  <div class="page-tabs" id="page-tabs">
+    <button class="page-tab" data-page="docs" onclick="App.showDocs()">📄 Docs</button>
+    <button class="page-tab active" data-page="ideas" onclick="App.showIdeas()">💡 Ideas</button>
+  </div>
   <div class="hdr-right">
     <span class="pill" style="background:var(--gbg);color:var(--gtx)" id="cnt-build">0 Build</span>
     <span class="pill" style="background:var(--bbg);color:var(--btx)" id="cnt-plan">0 Plan</span>
@@ -32,49 +36,55 @@
   </div>
 </div>
 
-<div class="body">
-  <!-- LEFT -->
-  <div class="left">
-    <div class="panel-hdr">
-      <div class="panel-title">Ideas (<span id="idea-total">0</span>)</div>
-      <div class="filter-row" id="filter-row">
-        <button class="fchip active" data-f="all">All</button>
-        <button class="fchip" data-f="Build Now">Build</button>
-        <button class="fchip" data-f="Plan for v1.5">Plan</button>
-        <button class="fchip" data-f="draft">Draft</button>
-        <button class="fchip" data-f="cut">Cut</button>
-      </div>
-    </div>
-    <div class="idea-list" id="idea-list"></div>
-    <button class="add-btn" onclick="App.newIdea()">+ New idea</button>
-  </div>
+<!-- DOC GENERATOR PAGE -->
+<div class="page" id="docgen-page" style="display:none"></div>
 
-  <!-- CENTER -->
-  <div class="center" id="center">
-    <div class="center-inner" id="center-inner">
-      <div class="empty-state" id="empty-state">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <h2>No idea selected</h2>
-        <p>Click "+ New" to capture a feature idea, or select one from the list to review.</p>
-        <button class="btn-s btn-p" onclick="App.newIdea()" style="margin-top:4px">+ Capture first idea</button>
+<!-- IDEAS PAGE (default) -->
+<div class="page" id="ideas-page">
+  <div class="body">
+    <!-- LEFT -->
+    <div class="left">
+      <div class="panel-hdr">
+        <div class="panel-title">Ideas (<span id="idea-total">0</span>)</div>
+        <div class="filter-row" id="filter-row">
+          <button class="fchip active" data-f="all">All</button>
+          <button class="fchip" data-f="Build Now">Build</button>
+          <button class="fchip" data-f="Plan for v1.5">Plan</button>
+          <button class="fchip" data-f="draft">Draft</button>
+          <button class="fchip" data-f="cut">Cut</button>
+        </div>
       </div>
+      <div class="idea-list" id="idea-list"></div>
+      <button class="add-btn" onclick="App.newIdea()">+ New idea</button>
     </div>
-  </div>
 
-  <!-- RIGHT -->
-  <div class="right" id="right-panel">
-    <div class="sheet-handle"></div>
-    <div>
-      <div class="ctx-title">Project Context</div>
-      <div class="drop-zone" id="drop-zone">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <div class="drop-zone-text">Drop files or click</div>
-        <div class="drop-zone-hint">.json .md .txt .docx</div>
-        <input type="file" id="file-input" multiple accept=".json,.md,.txt,.docx,.markdown" style="display:none">
+    <!-- CENTER -->
+    <div class="center" id="center">
+      <div class="center-inner" id="center-inner">
+        <div class="empty-state" id="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <h2>No idea selected</h2>
+          <p>Click "+ New" to capture a feature idea, or select one from the list to review.</p>
+          <button class="btn-s btn-p" onclick="App.newIdea()" style="margin-top:4px">+ Capture first idea</button>
+        </div>
       </div>
     </div>
-    <div id="doc-list"></div>
-    <div id="ctx-extracted"></div>
+
+    <!-- RIGHT -->
+    <div class="right" id="right-panel">
+      <div class="sheet-handle"></div>
+      <div>
+        <div class="ctx-title">Project Context</div>
+        <div class="drop-zone" id="drop-zone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <div class="drop-zone-text">Drop files or click</div>
+          <div class="drop-zone-hint">.json .md .txt .docx</div>
+          <input type="file" id="file-input" multiple accept=".json,.md,.txt,.docx,.markdown" style="display:none">
+        </div>
+      </div>
+      <div id="doc-list"></div>
+      <div id="ctx-extracted"></div>
+    </div>
   </div>
 </div>
 
@@ -92,6 +102,7 @@
 <script defer src="js/context.js"></script>
 <script defer src="js/renderer.js"></script>
 <script defer src="js/portfolio.js"></script>
+<script defer src="js/docgen.js"></script>
 <script defer src="js/app.js"></script>
 </body>
 </html>

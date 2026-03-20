@@ -12,6 +12,9 @@ const App = (() => {
   const { handleFiles, removeDoc: ctxRemoveDoc, clearContext: ctxClearContext, reExtract: ctxReExtract, extractContextAI, bindDrop } = ContextModule;
   const { renderAll, renderList, renderEval, renderContext, emptyStateHTML } = RendererModule;
   const { showPortfolio: pfShowPortfolio, exportIdea: pfExportIdea, exportAll: pfExportAll, exportConflicts: pfExportConflicts } = PortfolioModule;
+  const DG = DocgenModule;
+
+  let _currentPage = 'ideas';
 
   return {
     init() {
@@ -34,6 +37,24 @@ const App = (() => {
       });
     },
 
+    // ── PAGE SWITCHING ──
+    showDocs() {
+      _currentPage = 'docs';
+      document.getElementById('ideas-page').style.display = 'none';
+      document.getElementById('docgen-page').style.display = '';
+      document.querySelectorAll('.page-tab').forEach(t => t.classList.toggle('active', t.dataset.page === 'docs'));
+      DG.render();
+      // Bind upload zone after render
+      setTimeout(() => DG.bindUpload(), 50);
+    },
+    showIdeas() {
+      _currentPage = 'ideas';
+      document.getElementById('docgen-page').style.display = 'none';
+      document.getElementById('ideas-page').style.display = '';
+      document.querySelectorAll('.page-tab').forEach(t => t.classList.toggle('active', t.dataset.page === 'ideas'));
+      renderAll();
+    },
+
     select(id) {
       setCurrentId(id);
       closeMobileOverlays();
@@ -43,6 +64,7 @@ const App = (() => {
     },
 
     newIdea() {
+      if (_currentPage !== 'ideas') this.showIdeas();
       const idea = addIdea();
       this.select(idea.id);
       setTimeout(() => { const el = document.querySelector('.idea-input'); if (el) el.focus(); }, 50);
@@ -154,6 +176,23 @@ const App = (() => {
     toggleDrawer() { toggleDrawer(); },
     toggleSheet() { toggleSheet(); },
 
+    // ── Doc Generator ──
+    dgGoStep(n) { DG.goStep(n); setTimeout(() => DG.bindUpload(), 50); },
+    dgAnalyze() { DG.analyze(); },
+    dgToggleDoc(k) { DG.toggleDoc(k); },
+    dgStartBuilder() { DG.startBuilder(); },
+    dgSelectDoc(k) { DG.selectDoc(k); },
+    dgAnswer(dk, si, oi) { DG.answer(dk, si, oi); },
+    dgSetNote(dk, si, v) { DG.setNote(dk, si, v); },
+    dgGenerateMarkdown(k) { DG.generateMarkdown(k); },
+    dgRunCrossCheck() { DG.runCrossCheck(); },
+    dgCopyDoc(k) { DG.copyDoc(k); },
+    dgDownloadDoc(k) { DG.downloadDoc(k); },
+    dgDownloadAll() { DG.downloadAll(); },
+    dgInjectToContext() { DG.injectToContext(); },
+    dgRemoveUpload(i) { DG.removeUpload(i); },
+    dgSkipWithUploads() { DG.skipWithUploads(); },
+
     // ── Exposed utils for inline handlers ──
     esc,
     t,
@@ -162,3 +201,4 @@ const App = (() => {
 
 // Init on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => App.init());
+

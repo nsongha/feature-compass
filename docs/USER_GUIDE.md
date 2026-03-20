@@ -161,17 +161,18 @@ Click **All Project Context →** to see the full unfiltered context.
 
 ---
 
-## Doc Generator (Standalone Tool)
+## Doc Generator (Tích hợp trong app)
 
-Open `doc-generator.html` separately — a standalone AI-guided tool to create a full set of project documentation.
+Click tab **📄 Docs** trên header để mở Doc Generator — công cụ AI-guided tạo bộ docs dự án.
 
 ### Flow
 
-1. **Setup** — Enter API key, choose model, describe your project
-2. **Docs Plan** — AI analyzes and recommends which docs to create (PRD, Tech Stack, Schema, etc.)
-3. **Builder** — Answer guided questions for each doc; AI generates professional markdown
-4. **Cross-Check** — AI reviews all docs for consistency, orphan references, missing info
-5. **Export** — Download individual or all docs as `.md` files
+1. **Setup** — Mô tả dự án + (tùy chọn) upload docs sẵn có
+   - Upload docs → auto-skip Q&A → chuyển thẳng sang Ideas
+2. **Docs Plan** — AI phân tích và đề xuất docs cần tạo (PRD, Tech Stack, Schema...)
+3. **Builder** — Trả lời câu hỏi guided cho từng doc; AI tạo markdown (parallel calls)
+4. **Cross-Check** — AI review tính nhất quán, thiếu thông tin, orphan references
+5. **Export** — Download hoặc inject docs vào Project Context cho Ideas evaluation
 
 ### Supported Doc Types
 
@@ -184,3 +185,4 @@ Open `doc-generator.html` separately — a standalone AI-guided tool to create a
 | API_CONTRACT.md | API endpoint specifications |
 | AUTH_FLOW.md | Authentication flow |
 | DEPLOYMENT.md | Deploy strategy |
+

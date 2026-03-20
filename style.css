@@ -276,3 +276,71 @@ input,textarea,select,button{font-family:inherit;font-size:inherit}
   .left.drawer-open{transform:translateX(0)}
   .center-inner{padding:12px 14px}
 }
+
+/* ── PAGE TABS ── */
+.page-tabs{display:flex;gap:2px;margin-left:8px}
+.page-tab{padding:4px 12px;border-radius:6px;border:none;background:transparent;color:var(--tx3);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;font-family:var(--fn)}
+.page-tab:hover{background:var(--sur2);color:var(--tx2)}
+.page-tab.active{background:var(--tx);color:var(--bg)}
+.page{flex:1;overflow-y:auto}
+
+/* ── DOC GENERATOR ── */
+.dg-wrap{padding:20px 24px;max-width:860px;margin:0 auto}
+.dg-steps-nav{display:flex;gap:0;margin-bottom:20px;border-radius:var(--rl);overflow:hidden;border:0.5px solid var(--bd);background:var(--sur)}
+.dg-step-tab{flex:1;padding:9px 8px;text-align:center;font-size:11px;font-weight:500;color:var(--tx3);border-right:0.5px solid var(--bd);transition:all .15s;position:relative}
+.dg-step-tab:last-child{border-right:none}
+.dg-step-tab.active{background:var(--sur2);color:var(--tx);font-weight:600}
+.dg-step-tab.done{color:var(--gtx)}
+.dg-step-tab.done::after{content:'✓';margin-left:4px;font-size:10px}
+
+/* DOC CARD */
+.dg-doc-card{background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--rl);padding:12px 14px;margin-bottom:6px;display:flex;align-items:flex-start;gap:10px;transition:all .15s;cursor:pointer}
+.dg-doc-card:hover{border-color:var(--bdm)}
+.dg-doc-card.selected{border-color:var(--grn);background:var(--gbg)}
+.dg-doc-toggle{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--bdm);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;transition:all .15s;font-size:10px;color:transparent}
+.dg-doc-card.selected .dg-doc-toggle{border-color:var(--grn);background:var(--grn);color:#fff}
+.dg-doc-info{flex:1}
+.dg-doc-name{font-size:12px;font-weight:600;margin-bottom:2px}
+.dg-doc-desc{font-size:11px;color:var(--tx2);line-height:1.5}
+
+/* BUILDER */
+.dg-builder-layout{display:flex;gap:16px;min-height:55vh}
+.dg-builder-sidebar{width:180px;flex-shrink:0}
+.dg-builder-main{flex:1;min-width:0}
+.dg-nav-item{width:100%;text-align:left;padding:7px 10px;border:none;background:transparent;cursor:pointer;font-size:11px;color:var(--tx2);font-family:var(--fn);transition:all .1s;border-radius:var(--r);margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.dg-nav-item:hover{background:var(--sur2)}
+.dg-nav-item.active{background:var(--sur3);color:var(--tx);font-weight:600}
+.dg-nav-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;background:var(--tx3)}
+.dg-nav-item.done .dg-nav-dot{background:var(--grn)}
+.dg-nav-item.active .dg-nav-dot{background:var(--blu)}
+
+/* OPTION */
+.dg-q-opt{border:0.5px solid var(--bd);border-radius:var(--r);padding:9px 11px;cursor:pointer;transition:all .15s;display:flex;align-items:flex-start;gap:8px}
+.dg-q-opt:hover{border-color:var(--bdm);background:var(--sur2)}
+.dg-q-opt.sel{border-color:var(--grn);background:var(--gbg)}
+.dg-q-radio{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--bdm);flex-shrink:0;margin-top:1px;transition:all .15s;display:flex;align-items:center;justify-content:center}
+.dg-q-opt.sel .dg-q-radio{border-color:var(--grn);background:var(--grn)}
+.dg-q-rdot{width:5px;height:5px;border-radius:50%;background:#fff;display:none}
+.dg-q-opt.sel .dg-q-rdot{display:block}
+
+/* PREVIEW */
+.dg-md-pre{font-size:11px;line-height:1.7;color:var(--tx);font-family:var(--mono);white-space:pre-wrap;word-break:break-word;max-height:400px;overflow-y:auto;background:var(--sur2);padding:12px;border-radius:var(--r)}
+
+/* PROGRESS */
+.dg-progress{display:flex;align-items:center;gap:8px}
+.dg-progress-bar{width:100px;height:3px;background:var(--bd);border-radius:2px;overflow:hidden}
+.dg-progress-fill{height:100%;background:var(--grn);border-radius:2px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+
+@media(max-width:640px){
+  .dg-wrap{padding:14px 12px}
+  .dg-builder-layout{flex-direction:column}
+  .dg-builder-sidebar{width:100%;display:flex;gap:4px;overflow-x:auto;padding-bottom:6px}
+  .dg-nav-item{white-space:nowrap;flex-shrink:0}
+  .dg-steps-nav{font-size:10px}
+  .page-tabs{display:none}
+}
+@media(max-width:480px){
+  .page-tabs{margin-left:4px}
+  .page-tab{padding:4px 8px;font-size:10px}
+}
+

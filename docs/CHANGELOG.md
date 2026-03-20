@@ -9,7 +9,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- **Doc Generator** (`doc-generator.html`): standalone AI-guided tool tạo bộ docs dự án — 5-step flow: Setup → AI Analysis → Guided Builder → Cross-Check → Export
+- **Doc Generator Integration** — tích hợp trực tiếp vào app chính thay vì standalone HTML
+  - Page navigation: tabs `📄 Docs` / `💡 Ideas` trên header
+  - Module `js/docgen.js` — reuse `ApiModule`, `StateModule`, `UiModule`
+  - Upload docs sẵn có → auto-skip Q&A → chuyển thẳng Ideas
+  - Parallel AI calls (1 call/doc) thay vì 1 call lớn — tối ưu tốc độ Step 3
+  - Docs tạo ra tự động inject vào Project Context
+  - i18n keys EN + VI
+
+### Removed
+- `doc-generator.html` standalone file
+
+### Changed
+- `index.html` — thêm page tabs, wrap body trong pages
+- `style.css` — thêm ~70 lines CSS cho doc generator
+- `js/app.js` — wire DocgenModule, page switching logic
 - **Git Commit Rule** (`.agents/rules/git-commit.md`): quy tắc chi tiết cho commit messages — format, body requirements, ví dụ tốt/xấu
 - **CHANGELOG + docs update steps** trong `task-completion.md` workflow (steps 4-5)
 
