@@ -118,6 +118,9 @@ const I18nModule = (() => {
       dgDocsImported: 'Docs imported to context', dgCopied: 'Copied!',
       dgNoPlan: 'Run analysis first', dgDescTooShort: 'Description too short (min 20 chars)',
       dgLocked: 'Locked', dgNeedsBefore: 'Complete first', dgUnlocking: 'Unlocking',
+      dgLoadingHint: 'AI is crafting tailored questions based on your project context...',
+      dgDocsCompleted: 'docs completed', dgCopy: 'Copy', dgDownload: 'Download', dgRegenerate: '↻ Regenerate',
+      dgAllDone: 'All Documents Generated!', dgDocFiles: 'documents', dgTotal: 'total',
       // Impact Map
       pageImpactMap: '🗺️ Impact Map',
       imTitle: 'Document Impact Map',
@@ -250,6 +253,9 @@ const I18nModule = (() => {
       dgDocsImported: 'Docs đã import vào context', dgCopied: 'Đã copy!',
       dgNoPlan: 'Cần phân tích trước', dgDescTooShort: 'Mô tả quá ngắn (tối thiểu 20 ký tự)',
       dgLocked: 'Đang khóa', dgNeedsBefore: 'Hoàn thành trước', dgUnlocking: 'Đang mở khóa',
+      dgLoadingHint: 'AI đang tạo câu hỏi phù hợp dựa trên context dự án...',
+      dgDocsCompleted: 'docs hoàn tất', dgCopy: 'Copy', dgDownload: 'Tải', dgRegenerate: '↻ Tạo lại',
+      dgAllDone: 'Tất cả tài liệu đã hoàn thành!', dgDocFiles: 'tài liệu', dgTotal: 'tổng',
       // Impact Map
       pageImpactMap: '🗺️ Bản đồ ảnh hưởng',
       imTitle: 'Bản đồ ảnh hưởng tài liệu',

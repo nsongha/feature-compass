@@ -184,28 +184,36 @@ const DocgenModule = (() => {
   function renderBuilder(d) {
     if (!d.selectedDocs.length) return `<div class="empty-state" style="height:40vh"><p>${esc(t('dgNoDocsSelected'))}</p></div>`;
 
+    // Check if ALL docs are completed
+    const allDocsDone = d.selectedDocs.every(k => d.docs[k]?.markdown);
+    if (allDocsDone) return renderBuilderComplete(d);
+
     const navItems = d.selectedDocs.map(k => {
       const dt = DOC_TYPES[k];
       const doc = d.docs[k];
       const done = doc?.markdown ? true : false;
+      const hasQuestions = doc?.sections?.length > 0;
       const locked = !isUnlocked(d, k);
       const generating = d._generating[k];
       const active = d.currentDoc === k;
       const deps = d.depGraph[k] || [];
       const missingDeps = deps.filter(dep => !d.docs[dep]?.markdown).map(dep => DOC_TYPES[dep]?.name || dep);
+      // Clickable only if unlocked AND has questions ready
+      const clickable = !locked && hasQuestions && !generating;
 
       let statusIcon = '';
       let cls = '';
       if (done) { statusIcon = ''; cls = ' done'; }
       else if (generating) { statusIcon = ' ⏳'; cls = ' generating'; }
       else if (locked) { statusIcon = ' 🔒'; cls = ' locked'; }
+      else if (!hasQuestions) { statusIcon = ' ⏳'; cls = ' generating'; } // unlocked but no questions yet
 
       const tooltip = locked && missingDeps.length
         ? ` title="${esc(t('dgNeedsBefore'))}: ${esc(missingDeps.join(', '))}"`
-        : '';
+        : (!clickable && !locked ? ` title="${esc(t('dgGeneratingQs'))}"` : '');
 
       return `<button class="dg-nav-item${active?' active':''}${cls}"
-        ${locked ? 'disabled' : `onclick="App.dgSelectDoc('${k}')"`}${tooltip}>
+        ${clickable ? `onclick="App.dgSelectDoc('${k}')"` : 'disabled'}${tooltip}>
         <span class="dg-nav-dot"></span>${dt?.icon || ''} ${dt?.name || k}${statusIcon}
       </button>`;
     }).join('');
@@ -235,7 +243,17 @@ const DocgenModule = (() => {
 
     const doc = d.docs[key];
     const dt = DOC_TYPES[key];
-    if (!doc || !doc.sections) return `<div class="loading-wrap"><svg class="loading-spin" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10" opacity=".2"/><path d="M12 2a10 10 0 019.5 7"/></svg><div class="loading-text">${esc(t('dgGeneratingQs'))}</div></div>`;
+    if (!doc || !doc.sections) {
+      const completedCount = d.selectedDocs.filter(k => d.docs[k]?.markdown).length;
+      const total = d.selectedDocs.length;
+      return `<div class="dg-loading-state">
+        <svg class="loading-spin" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round" style="width:36px;height:36px"><circle cx="12" cy="12" r="10" opacity=".2"/><path d="M12 2a10 10 0 019.5 7"/></svg>
+        <div class="dg-loading-title">${dt?.icon || ''} ${esc(t('dgGeneratingQs'))}</div>
+        <div class="dg-loading-doc">${esc(dt?.name || key)}</div>
+        <div class="dg-loading-hint">${esc(t('dgLoadingHint'))}</div>
+        ${completedCount > 0 ? `<div class="dg-loading-progress">${completedCount}/${total} ${esc(t('dgDocsCompleted'))}</div>` : ''}
+      </div>`;
+    }
 
     const sections = doc.sections;
     // Find first unanswered index for auto-expand
@@ -284,17 +302,68 @@ const DocgenModule = (() => {
     });
 
     const allAnswered = isAllAnswered(doc);
-    html += `<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-      <button class="btn-s btn-p" onclick="App.dgGenerateMarkdown('${key}')" ${!allAnswered?'disabled':''}>${allAnswered ? esc(t('dgGenerate')) : esc(t('dgAnswerAll'))}</button>
-    </div>`;
+    if (!doc.markdown) {
+      html += `<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button class="btn-s btn-p" onclick="App.dgGenerateMarkdown('${key}')" ${!allAnswered?'disabled':''}>${allAnswered ? esc(t('dgGenerate')) : esc(t('dgAnswerAll'))}</button>
+      </div>`;
+    }
 
     if (doc.markdown) {
-      html += `<div class="sec" style="margin-top:12px">
-        <div class="sec-label">Preview — ${dt?.name}</div>
+      html += `<div class="dg-preview-done">
+        <div class="dg-preview-header">
+          <span class="dg-preview-badge">✅ ${esc(dt?.name)} ${esc(t('dgDone'))}</span>
+          <div style="display:flex;gap:6px">
+            <button class="btn-s" onclick="App.dgCopyDoc('${key}')">${esc(t('dgCopy'))}</button>
+            <button class="btn-s" onclick="App.dgDownloadDoc('${key}')">${esc(t('dgDownload'))}</button>
+            <button class="btn-s btn-p" onclick="App.dgGenerateMarkdown('${key}')">${esc(t('dgRegenerate'))}</button>
+          </div>
+        </div>
         <pre class="dg-md-pre">${esc(doc.markdown)}</pre>
       </div>`;
     }
     return html;
+  }
+
+  /** Completion summary — shown when ALL docs have markdown */
+  function renderBuilderComplete(d) {
+    const total = d.selectedDocs.length;
+    const totalSize = d.selectedDocs.reduce((s, k) => s + new Blob([d.docs[k]?.markdown || '']).size, 0);
+    const sizeLabel = totalSize > 1024 ? (totalSize / 1024).toFixed(1) + 'KB' : totalSize + 'B';
+
+    const cards = d.selectedDocs.map(k => {
+      const dt = DOC_TYPES[k];
+      const doc = d.docs[k];
+      const sz = new Blob([doc?.markdown || '']).size;
+      const szLabel = sz > 1024 ? (sz / 1024).toFixed(1) + 'KB' : sz + 'B';
+      return `<div class="dg-complete-card">
+        <div class="dg-complete-card-info">
+          <span class="dg-complete-card-icon">${dt?.icon || ''}</span>
+          <div>
+            <div class="dg-complete-card-name">${esc(dt?.name || k)}</div>
+            <div class="dg-complete-card-size">${szLabel}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="btn-s" onclick="App.dgCopyDoc('${k}')">${esc(t('dgCopy'))}</button>
+          <button class="btn-s" onclick="App.dgDownloadDoc('${k}')">${esc(t('dgDownload'))}</button>
+          <button class="btn-s" onclick="App.dgSelectDoc('${k}');App.dgGoStep(3)" style="font-size:10px">${esc(t('imEdit'))}</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div class="dg-complete-wrap">
+      <div class="dg-complete-header">
+        <div style="font-size:32px">🎉</div>
+        <h2>${esc(t('dgAllDone'))}</h2>
+        <p>${total} ${esc(t('dgDocFiles'))} · ${sizeLabel} ${esc(t('dgTotal'))}</p>
+      </div>
+      <div class="dg-complete-cards">${cards}</div>
+      <div class="dg-complete-actions">
+        <button class="btn-s btn-p" onclick="App.dgDownloadAll()">⬇ ${esc(t('dgDownloadAll'))}</button>
+        <button class="btn-s btn-gold" onclick="App.dgGoStep(4)">→ ${esc(t('dgCrossCheck'))}</button>
+        <button class="btn-s btn-gold" onclick="App.dgInjectToContext()">⚡ ${esc(t('dgInjectContext'))}</button>
+      </div>
+    </div>`;
   }
 
   /** Expand a collapsed question */
