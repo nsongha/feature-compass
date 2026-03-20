@@ -80,3 +80,14 @@ Khi phát hiện issue mới:
    **Workaround:** ...
    **Giải pháp dài hạn:** ...
    ```
+
+---
+
+## See Also
+
+- [Security](./SECURITY.md) — Threat model and security mitigations
+- [Architecture](./ARCHITECTURE.md) — State management and localStorage details
+- [API Reference](./API_REFERENCE.md) — JSON parsing and repair logic
+- [Project Context](./PROJECT_CONTEXT.md) — Design constraints behind these issues
+- [Deployment](./DEPLOYMENT.md) — Production deployment considerations
+

@@ -142,3 +142,14 @@ If you discover a security vulnerability, please report it responsibly:
    ```
 3. **Self-host CDN deps** — Eliminate external dependencies for maximum control
 4. **Regular updates** — Keep mammoth.js and API client version current
+
+---
+
+## See Also
+
+- [Architecture](./ARCHITECTURE.md) — State schema and data flow details
+- [API Reference](./API_REFERENCE.md) — API key transmission and AI request format
+- [Deployment](./DEPLOYMENT.md) — HTTPS setup and self-hosting CDN deps
+- [Known Issues](./KNOWN_ISSUES.md) — Accepted risks and their workarounds
+- [Contributing](./CONTRIBUTING.md) — Security guidelines for contributors
+

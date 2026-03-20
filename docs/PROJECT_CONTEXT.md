@@ -45,3 +45,14 @@
 - Startup founders prioritizing MVP scope
 - Development teams deciding build vs. defer
 - Solo developers assessing personal project features
+
+---
+
+## See Also
+
+- [Architecture](./ARCHITECTURE.md) — Detailed system design and state schema
+- [User Guide](./USER_GUIDE.md) — How end-users interact with the app
+- [Known Issues](./KNOWN_ISSUES.md) — Limitations stemming from these constraints
+- [Contributing](./CONTRIBUTING.md) — Guidelines for developers joining the project
+- [Deployment](./DEPLOYMENT.md) — How to host this static app
+
