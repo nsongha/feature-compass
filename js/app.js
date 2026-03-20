@@ -13,6 +13,7 @@ const App = (() => {
   const { renderAll, renderList, renderEval, renderContext, emptyStateHTML } = RendererModule;
   const { showPortfolio: pfShowPortfolio, exportIdea: pfExportIdea, exportAll: pfExportAll, exportConflicts: pfExportConflicts } = PortfolioModule;
   const DG = DocgenModule;
+  const IM = ImpactMapModule;
 
   let _currentPage = 'ideas';
 
@@ -42,6 +43,7 @@ const App = (() => {
       _currentPage = 'docs';
       document.getElementById('ideas-page').style.display = 'none';
       document.getElementById('docgen-page').style.display = '';
+      document.getElementById('impactmap-page').style.display = 'none';
       document.querySelectorAll('.page-tab').forEach(t => t.classList.toggle('active', t.dataset.page === 'docs'));
       DG.render();
       // Bind upload zone after render
@@ -50,9 +52,18 @@ const App = (() => {
     showIdeas() {
       _currentPage = 'ideas';
       document.getElementById('docgen-page').style.display = 'none';
+      document.getElementById('impactmap-page').style.display = 'none';
       document.getElementById('ideas-page').style.display = '';
       document.querySelectorAll('.page-tab').forEach(t => t.classList.toggle('active', t.dataset.page === 'ideas'));
       renderAll();
+    },
+    showImpactMap() {
+      _currentPage = 'impactmap';
+      document.getElementById('ideas-page').style.display = 'none';
+      document.getElementById('docgen-page').style.display = 'none';
+      document.getElementById('impactmap-page').style.display = '';
+      document.querySelectorAll('.page-tab').forEach(t => t.classList.toggle('active', t.dataset.page === 'impactmap'));
+      IM.render();
     },
 
     select(id) {
@@ -196,6 +207,13 @@ const App = (() => {
     // ── Exposed utils for inline handlers ──
     esc,
     t,
+
+    // ── Impact Map ──
+    imAnalyze() { IM.analyzeImpact(); },
+    imEdit(id) { IM.edit(id); },
+    imSave(id) { IM.saveEdit(id); },
+    imRevert(id) { IM.revert(id); },
+    imCancel() { IM.cancelEdit(); },
   };
 })();
 

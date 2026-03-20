@@ -16,14 +16,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Parallel AI calls (1 call/doc) thay vì 1 call lớn — tối ưu tốc độ Step 3
   - Docs tạo ra tự động inject vào Project Context
   - i18n keys EN + VI
+- **Document Impact Visualizer** — trang `🗺️ Impact Map` mới
+  - Module `js/impactmap.js` — tách docs thành sections, vẽ Canvas graph
+  - Node cards hiển thị từng section với edit/revert
+  - AI phân tích quan hệ giữa sections (supports/conflicts/constrains)
+  - Canvas Bezier edges + hover tooltip giải thích quan hệ
+  - Empty state với hướng dẫn khi chưa import docs
+  - i18n keys EN + VI (24 keys)
 
 ### Removed
 - `doc-generator.html` standalone file
 
 ### Changed
 - `index.html` — thêm page tabs, wrap body trong pages
-- `style.css` — thêm ~70 lines CSS cho doc generator
-- `js/app.js` — wire DocgenModule, page switching logic
+- `style.css` — thêm ~70 lines CSS cho doc generator + ~30 lines cho Impact Map
+- `js/app.js` — wire DocgenModule + ImpactMapModule, page switching logic (3 pages)
+- `js/i18n.js` — thêm 24 i18n keys cho Impact Map (EN + VI)
 - **Git Commit Rule** (`.agents/rules/git-commit.md`): quy tắc chi tiết cho commit messages — format, body requirements, ví dụ tốt/xấu
 - **CHANGELOG + docs update steps** trong `task-completion.md` workflow (steps 4-5)
 

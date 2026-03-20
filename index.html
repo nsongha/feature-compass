@@ -24,6 +24,7 @@
   <div class="page-tabs" id="page-tabs">
     <button class="page-tab" data-page="docs" onclick="App.showDocs()">📄 Docs</button>
     <button class="page-tab active" data-page="ideas" onclick="App.showIdeas()">💡 Ideas</button>
+    <button class="page-tab" data-page="impactmap" onclick="App.showImpactMap()">🗺️ Impact</button>
   </div>
   <div class="hdr-right">
     <span class="pill" style="background:var(--gbg);color:var(--gtx)" id="cnt-build">0 Build</span>
@@ -38,6 +39,9 @@
 
 <!-- DOC GENERATOR PAGE -->
 <div class="page" id="docgen-page" style="display:none"></div>
+
+<!-- IMPACT MAP PAGE -->
+<div class="page" id="impactmap-page" style="display:none"></div>
 
 <!-- IDEAS PAGE (default) -->
 <div class="page" id="ideas-page">
@@ -103,6 +107,7 @@
 <script defer src="js/renderer.js"></script>
 <script defer src="js/portfolio.js"></script>
 <script defer src="js/docgen.js"></script>
+<script defer src="js/impactmap.js"></script>
 <script defer src="js/app.js"></script>
 </body>
 </html>
