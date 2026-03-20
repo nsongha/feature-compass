@@ -33,7 +33,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `js/app.js` — wire DocgenModule + ImpactMapModule, page switching logic (3 pages)
 - `js/i18n.js` — thêm 24 i18n keys cho Impact Map (EN + VI)
 - **Git Commit Rule** (`.agents/rules/git-commit.md`): quy tắc chi tiết cho commit messages — format, body requirements, ví dụ tốt/xấu
+- **Docs Update Rule** (`.agents/rules/docs-update.md`): ma trận bắt buộc update docs theo loại thay đổi
 - **CHANGELOG + docs update steps** trong `task-completion.md` workflow (steps 4-5)
+- **Docs update step** trong `add-verdict-type.md` workflow (step 10)
 
 ---
 

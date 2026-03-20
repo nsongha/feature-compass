@@ -71,13 +71,18 @@ const verdictColors = {
 };
 ```
 
-10. **Test toàn bộ**
+10. **Update docs** — theo `.agents/rules/docs-update.md` (verdict type = bắt buộc 3 files):
+- `docs/CHANGELOG.md` — ✅ bắt buộc — thêm entry `### Added` mô tả verdict mới
+- `docs/API_REFERENCE.md` — ✅ bắt buộc — thêm verdict vào schema, update `calcVerdict()` logic
+- `docs/USER_GUIDE.md` — ✅ bắt buộc — thêm mô tả verdict mới, cách override
+
+11. **Test toàn bộ**
 - Tạo idea → AI evaluate → verify verdict logic
 - Override sang verdict mới → verify UI
 - Portfolio view → verify quadrant rendering
 - Export .md → verify verdict xuất đúng
 
-11. **Update unit tests** — `tests/tests.js`
+12. **Update unit tests** — `tests/tests.js`
 - Thêm test case cho `calcVerdict()` với verdict mới
 
-12. **Chạy `/task-completion`** workflow
+13. **Chạy `/task-completion`** workflow

@@ -35,11 +35,16 @@ find . -name "*.bak" -o -name "*.tmp" -o -name ".DS_Store" | head -20
 - Mỗi task phải có ít nhất 1 dòng trong CHANGELOG
 - Dùng section phù hợp: Added, Changed, Fixed, Removed
 
-5. **Update docs liên quan** (nếu cần):
-- `docs/KNOWN_ISSUES.md` — nếu fix bug hoặc phát hiện issue mới
-- `docs/PROJECT_CONTEXT.md` — nếu thêm feature mới hoặc thay đổi kiến trúc
-- `docs/API_REFERENCE.md` — nếu thay đổi API/prompt structure
-- `docs/USER_GUIDE.md` — nếu thêm/sửa UI flow
+5. **Update docs liên quan** — tra ma trận trong `.agents/rules/docs-update.md`:
+   - Xác định loại thay đổi: feature mới / fix bug / refactor / UI / prompt / data model?
+   - Check cột tương ứng trong ma trận → update files bắt buộc (✅)
+   - Checklist nhanh:
+     - [ ] `docs/CHANGELOG.md` — ✅ **luôn bắt buộc** (đã làm step 4)
+     - [ ] `docs/USER_GUIDE.md` — nếu thêm/sửa UI flow
+     - [ ] `docs/API_REFERENCE.md` — nếu thay đổi prompt/API/data schema
+     - [ ] `docs/PROJECT_CONTEXT.md` — nếu thay đổi kiến trúc/module/data model
+     - [ ] `docs/KNOWN_ISSUES.md` — nếu fix bug hoặc phát hiện issue mới
+     - [ ] `docs/ARCHITECTURE.md` — nếu refactor kiến trúc/dependency graph
 
 6. Stage all changes
 ```bash
