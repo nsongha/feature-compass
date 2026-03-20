@@ -611,7 +611,13 @@ Return ONLY valid JSON (no markdown fences):
 PROJECT: ${projectDesc}
 ${prevDocs ? `\nALREADY COMPLETED DOCS (use these for context, reference them where relevant):\n${prevDocs}\n` : ''}
 
-For the document type "${dt.name}" (${dt.desc}), generate 3-6 key questions/sections that need to be decided. Each question should have 2-4 options to choose from. Questions should be SPECIFIC to this project based on the context above.
+For the document type "${dt.name}" (${dt.desc}), generate ONLY the key decisions that genuinely need human input. Follow these rules:
+- Ask ONLY questions where the answer is NOT obvious from the project description or completed docs
+- If a decision was already made in a previous doc, DO NOT ask it again
+- Simple projects need fewer questions (2-3), complex projects may need more (up to 8)
+- Each question must have 2-4 distinct options with real tradeoffs
+- Skip trivially obvious choices (e.g. don't ask "should we use version control?" or "should we have error handling?")
+- Questions should be SPECIFIC to this project, not generic boilerplate
 
 Return ONLY valid JSON (no markdown fences):
 {
@@ -619,10 +625,10 @@ Return ONLY valid JSON (no markdown fences):
   "sections": [
     {
       "id": "<unique_id>",
-      "question": "<question to answer>",
-      "context": "<why this matters, 1-2 sentences>",
+      "question": "<specific question requiring a real decision>",
+      "context": "<why this matters for THIS project, 1-2 sentences>",
       "options": [
-        { "label": "<option name>", "desc": "<description>", "tag": "recommended|alternative|advanced" }
+        { "label": "<option name>", "desc": "<description with tradeoff>", "tag": "recommended|alternative|advanced" }
       ]
     }
   ]
