@@ -221,7 +221,7 @@ const DocgenModule = (() => {
       const deps = d.depGraph[k] || [];
       const missingDeps = deps.filter(dep => !d.docs[dep]?.markdown).map(dep => DOC_TYPES[dep]?.name || dep);
       // Clickable only if unlocked AND has questions ready
-      const clickable = (!locked && hasQuestions && !generating) || done;
+      const clickable = (!locked && !generating && hasQuestions) || done || generating;
 
       let statusIcon = '';
       let cls = '';

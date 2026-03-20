@@ -334,7 +334,7 @@ input,textarea,select,button{font-family:inherit;font-size:inherit}
 /* LOCKED NAV */
 .dg-nav-item.locked{opacity:.45;cursor:not-allowed}
 .dg-nav-item.locked .dg-nav-dot{background:var(--bd)}
-.dg-nav-item.generating{opacity:.7;cursor:default;pointer-events:none}
+.dg-nav-item.generating{opacity:.7;cursor:pointer}
 .dg-nav-item.generating .dg-nav-dot{background:var(--gold);animation:pulse .8s infinite alternate}
 @keyframes pulse{from{opacity:.3}to{opacity:1}}
 
