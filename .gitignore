@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+
+# Agents metadata (AI conversations, brain, etc.)
+.gemini/

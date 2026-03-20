@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feature Compass</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js" defer></script>
+</head>
+<body>
+
+<div class="hdr">
+  <button class="mobile-menu-btn" onclick="App.toggleDrawer()" aria-label="Menu">☰</button>
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+      <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1" fill="currentColor"/>
+      <line x1="12" y1="2" x2="12" y2="7" opacity=".4"/><line x1="12" y1="17" x2="12" y2="22" opacity=".4"/>
+      <line x1="2" y1="12" x2="7" y2="12" opacity=".4"/><line x1="17" y1="12" x2="22" y2="12" opacity=".4"/>
+      <path d="M12 2.5 L13 12 L12 10 L11 12 Z" fill="currentColor" stroke="none"/>
+    </svg>
+    Feature<em>Compass</em>
+  </div>
+  <div class="hdr-sub" id="hdr-sub">Evaluate features before they hit the backlog</div>
+  <div class="hdr-right">
+    <span class="pill" style="background:var(--gbg);color:var(--gtx)" id="cnt-build">0 Build</span>
+    <span class="pill" style="background:var(--bbg);color:var(--btx)" id="cnt-plan">0 Plan</span>
+    <span class="pill" style="background:var(--rbg);color:var(--rtx)" id="cnt-cut">0 Cut</span>
+    <button class="btn-s" onclick="App.showPortfolio()">Portfolio</button>
+    <button class="btn-s" onclick="App.openSettings()">⚙ Settings</button>
+    <button class="btn-s btn-p" onclick="App.newIdea()">+ New</button>
+    <button class="mobile-ctx-btn" onclick="App.toggleSheet()" aria-label="Context">📋</button>
+  </div>
+</div>
+
+<div class="body">
+  <!-- LEFT -->
+  <div class="left">
+    <div class="panel-hdr">
+      <div class="panel-title">Ideas (<span id="idea-total">0</span>)</div>
+      <div class="filter-row" id="filter-row">
+        <button class="fchip active" data-f="all">All</button>
+        <button class="fchip" data-f="Build Now">Build</button>
+        <button class="fchip" data-f="Plan for v1.5">Plan</button>
+        <button class="fchip" data-f="draft">Draft</button>
+        <button class="fchip" data-f="cut">Cut</button>
+      </div>
+    </div>
+    <div class="idea-list" id="idea-list"></div>
+    <button class="add-btn" onclick="App.newIdea()">+ New idea</button>
+  </div>
+
+  <!-- CENTER -->
+  <div class="center" id="center">
+    <div class="center-inner" id="center-inner">
+      <div class="empty-state" id="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <h2>No idea selected</h2>
+        <p>Click "+ New" to capture a feature idea, or select one from the list to review.</p>
+        <button class="btn-s btn-p" onclick="App.newIdea()" style="margin-top:4px">+ Capture first idea</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right" id="right-panel">
+    <div class="sheet-handle"></div>
+    <div>
+      <div class="ctx-title">Project Context</div>
+      <div class="drop-zone" id="drop-zone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div class="drop-zone-text">Drop files or click</div>
+        <div class="drop-zone-hint">.json .md .txt .docx</div>
+        <input type="file" id="file-input" multiple accept=".json,.md,.txt,.docx,.markdown" style="display:none">
+      </div>
+    </div>
+    <div id="doc-list"></div>
+    <div id="ctx-extracted"></div>
+  </div>
+</div>
+
+<!-- Mobile overlay -->
+<div class="drawer-overlay" id="drawer-overlay"></div>
+
+<div class="toast-box" id="toasts"></div>
+<div class="modal-bg" id="modal-bg"><div class="modal" id="modal-body"></div></div>
+
+<!-- Modules loaded in dependency order -->
+<script defer src="js/i18n.js"></script>
+<script defer src="js/ui.js"></script>
+<script defer src="js/state.js"></script>
+<script defer src="js/api.js"></script>
+<script defer src="js/context.js"></script>
+<script defer src="js/renderer.js"></script>
+<script defer src="js/portfolio.js"></script>
+<script defer src="js/app.js"></script>
+</body>
+</html>

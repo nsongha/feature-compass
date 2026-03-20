@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feature Compass — Tests</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #0f0f0e; color: #e2e0d8; padding: 24px; }
+  h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { font-size: 12px; color: #8a8980; margin-bottom: 20px; }
+  .summary { display: flex; gap: 12px; margin-bottom: 20px; padding: 12px 16px; border-radius: 8px; background: #1c1c1a; border: 0.5px solid rgba(255,255,255,0.06); }
+  .stat { text-align: center; }
+  .stat-val { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700; }
+  .stat-label { font-size: 10px; color: #8a8980; text-transform: uppercase; letter-spacing: 0.06em; }
+  .pass .stat-val { color: #1D9E75; }
+  .fail .stat-val { color: #D94444; }
+  .total .stat-val { color: #B8860B; }
+  .suite { margin-bottom: 16px; }
+  .suite-name { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #8a8980; margin-bottom: 6px; }
+  .test { padding: 6px 10px; border-radius: 6px; margin-bottom: 3px; font-size: 12px; display: flex; align-items: center; gap: 8px; }
+  .test.pass { background: #0e2e1e; color: #6FD4A8; }
+  .test.fail { background: #3a1414; color: #F09595; }
+  .test .icon { font-size: 14px; flex-shrink: 0; }
+  .test .name { flex: 1; }
+  .test .detail { font-size: 10px; opacity: 0.7; font-family: 'JetBrains Mono', monospace; }
+  .time { font-size: 11px; color: #5e5d56; margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<h1>Feature Compass — Test Suite</h1>
+<p class="subtitle">Unit tests for core logic functions</p>
+
+<div class="summary" id="summary"></div>
+<div id="results"></div>
+<p class="time" id="time"></p>
+
+<!-- Load app.js to get App object, but prevent DOM init -->
+<div style="display:none">
+  <div class="hdr"><div class="hdr-sub" id="hdr-sub"></div><div class="hdr-right"><button onclick="App.showPortfolio()"></button><button onclick="App.openSettings()"></button><button class="btn-p" onclick="App.newIdea()"></button></div></div>
+  <div class="body"><div class="left"><div class="panel-hdr"><div class="panel-title">Ideas (<span id="idea-total">0</span>)</div><div class="filter-row" id="filter-row"></div></div><div class="idea-list" id="idea-list"></div><button class="add-btn"></button></div><div class="center" id="center"><div class="center-inner" id="center-inner"></div></div><div class="right" id="right-panel"><div><div class="ctx-title"></div><div class="drop-zone" id="drop-zone"><div class="drop-zone-text"></div><input type="file" id="file-input" style="display:none"></div></div><div id="doc-list"></div><div id="ctx-extracted"></div></div></div>
+  <div class="toast-box" id="toasts"></div>
+  <div class="modal-bg" id="modal-bg"><div class="modal" id="modal-body"></div></div>
+</div>
+
+<script src="../app.js"></script>
+<script src="tests.js"></script>
+</body>
+</html>
