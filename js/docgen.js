@@ -221,14 +221,15 @@ const DocgenModule = (() => {
       const deps = d.depGraph[k] || [];
       const missingDeps = deps.filter(dep => !d.docs[dep]?.markdown).map(dep => DOC_TYPES[dep]?.name || dep);
       // Clickable only if unlocked AND has questions ready
-      const clickable = !locked && hasQuestions && !generating;
+      const clickable = (!locked && hasQuestions && !generating) || done;
 
       let statusIcon = '';
       let cls = '';
-      if (done) { statusIcon = ''; cls = ' done'; }
-      else if (generating) { statusIcon = ' ⏳'; cls = ' generating'; }
-      else if (locked) { statusIcon = ' 🔒'; cls = ' locked'; }
-      else if (!hasQuestions) { statusIcon = ' ⏳'; cls = ' generating'; } // unlocked but no questions yet
+      let prefix = `<span class="dg-nav-dot"></span>${dt?.icon || ''} `;
+      if (done) { prefix = `<span class="dg-nav-check">\u2713</span>`; cls = ' done'; }
+      else if (generating) { statusIcon = ' \u23f3'; cls = ' generating'; }
+      else if (locked) { statusIcon = ' \ud83d\udd12'; cls = ' locked'; }
+      else if (!hasQuestions) { statusIcon = ' \u23f3'; cls = ' generating'; }
 
       const tooltip = locked && missingDeps.length
         ? ` title="${esc(t('dgNeedsBefore'))}: ${esc(missingDeps.join(', '))}"`
@@ -236,7 +237,7 @@ const DocgenModule = (() => {
 
       return `<button class="dg-nav-item${active?' active':''}${cls}"
         ${clickable ? `onclick="App.dgSelectDoc('${k}')"` : 'disabled'}${tooltip}>
-        <span class="dg-nav-dot"></span>${dt?.icon || ''} ${dt?.name || k}${statusIcon}
+        ${prefix}${dt?.name || k}${statusIcon}
       </button>`;
     }).join('');
 
