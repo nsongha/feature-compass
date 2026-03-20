@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 - **Git Commit Rule** (`.agents/rules/git-commit.md`): quy tắc chi tiết cho commit messages — format, body requirements, ví dụ tốt/xấu
 - **CHANGELOG + docs update steps** trong `task-completion.md` workflow (steps 4-5)
+- **hello.md**: file chào mừng, tạo bởi Claude Code trên web
 
 ---
 
