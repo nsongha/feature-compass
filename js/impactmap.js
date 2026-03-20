@@ -45,41 +45,36 @@ const ImpactMapModule = (() => {
 
   function splitDocsToNodes(docs) {
     const nodes = [];
-    let yOffset = 0;
 
     docs.forEach((doc, di) => {
       const sections = splitMarkdownSections(doc.content || '');
-      const xBase = di * 320;
+      const docId = doc.id || `d${di}`;
 
       if (sections.length === 0) {
-        // Whole doc as single node
         nodes.push({
-          id: `im_${doc.id || di}_0`,
-          docId: doc.id || `d${di}`,
+          id: `im_${docId}_0`,
+          docId,
           docName: doc.name,
           sectionTitle: doc.name,
-          content: (doc.content || '').slice(0, 500),
-          originalContent: (doc.content || '').slice(0, 500),
-          x: xBase,
-          y: 0,
+          content: (doc.content || '').slice(0, 800),
+          originalContent: (doc.content || '').slice(0, 800),
+          x: 0, y: 0,
           edited: false,
         });
       } else {
         sections.forEach((sec, si) => {
           nodes.push({
-            id: `im_${doc.id || di}_${si}`,
-            docId: doc.id || `d${di}`,
+            id: `im_${docId}_${si}`,
+            docId,
             docName: doc.name,
             sectionTitle: sec.title,
-            content: sec.content.slice(0, 500),
-            originalContent: sec.content.slice(0, 500),
-            x: xBase,
-            y: si * 180,
+            content: sec.content.slice(0, 800),
+            originalContent: sec.content.slice(0, 800),
+            x: 0, y: 0,
             edited: false,
           });
         });
       }
-      yOffset = 0;
     });
 
     return nodes;
@@ -87,15 +82,16 @@ const ImpactMapModule = (() => {
 
   function splitMarkdownSections(md) {
     const lines = md.split('\n');
-    const sections = [];
+    const rawSections = [];
     let currentTitle = '';
     let currentLines = [];
 
     for (const line of lines) {
-      const match = line.match(/^(#{1,3})\s+(.+)/);
+      // Only split on H1 and H2 (not H3+)
+      const match = line.match(/^(#{1,2})\s+(.+)/);
       if (match) {
         if (currentTitle || currentLines.length) {
-          sections.push({ title: currentTitle || 'Introduction', content: currentLines.join('\n').trim() });
+          rawSections.push({ title: currentTitle || 'Introduction', content: currentLines.join('\n').trim() });
         }
         currentTitle = match[2].trim();
         currentLines = [];
@@ -104,13 +100,25 @@ const ImpactMapModule = (() => {
       }
     }
     if (currentTitle || currentLines.length) {
-      sections.push({ title: currentTitle || 'Content', content: currentLines.join('\n').trim() });
+      rawSections.push({ title: currentTitle || 'Content', content: currentLines.join('\n').trim() });
     }
-    return sections;
+
+    // Merge short sections (< 50 chars content) into previous section
+    const merged = [];
+    for (const sec of rawSections) {
+      if (merged.length && sec.content.length < 50) {
+        const prev = merged[merged.length - 1];
+        prev.content += `\n\n**${sec.title}**\n${sec.content}`;
+      } else {
+        merged.push({ ...sec });
+      }
+    }
+    return merged;
   }
 
   // ── LAYOUT ──
 
+  /** Waterfall layout: use docgen dependency graph when available, fallback to grid */
   function layoutNodes(nodes) {
     // Group by doc
     const groups = {};
@@ -123,17 +131,96 @@ const ImpactMapModule = (() => {
     const colWidth = 300;
     const colGap = 60;
     const rowHeight = 160;
-    const rowGap = 20;
+    const rowGap = 24;
     const startX = 20;
     const startY = 20;
 
-    groupKeys.forEach((gk, gi) => {
-      const group = groups[gk];
-      group.forEach((node, ni) => {
-        node.x = startX + gi * (colWidth + colGap);
-        node.y = startY + ni * (rowHeight + rowGap);
-      });
+    // Try to get dependency graph from docgen state
+    const depGraph = state.docgen?.depGraph || {};
+    const docOrder = state.docgen?.selectedDocs || [];
+
+    // Build level map: docs with no deps → level 0, deps of level 0 → level 1, etc.
+    const docNameToGroupKey = {};
+    groupKeys.forEach(gk => {
+      const firstName = groups[gk][0]?.docName?.replace(/\.md$/i, '').toLowerCase() || '';
+      // Try to match doc name to docgen keys
+      for (const dk of Object.keys(depGraph)) {
+        if (firstName.includes(dk) || dk.includes(firstName)) {
+          docNameToGroupKey[dk] = gk;
+        }
+      }
     });
+
+    // Calculate levels from dependency graph
+    const levels = {};
+    function getLevel(docKey, visited = new Set()) {
+      if (levels[docKey] !== undefined) return levels[docKey];
+      if (visited.has(docKey)) return 0; // cycle guard
+      visited.add(docKey);
+      const deps = depGraph[docKey] || [];
+      if (!deps.length) { levels[docKey] = 0; return 0; }
+      const maxDepLevel = Math.max(...deps.map(d => getLevel(d, visited)));
+      levels[docKey] = maxDepLevel + 1;
+      return levels[docKey];
+    }
+
+    // Calculate levels for all known doc keys
+    Object.keys(depGraph).forEach(k => getLevel(k));
+
+    // Map groupKeys to levels
+    const groupLevels = {};
+    groupKeys.forEach(gk => {
+      // Find matching docgen key
+      const matchedKey = Object.entries(docNameToGroupKey).find(([, v]) => v === gk)?.[0];
+      groupLevels[gk] = matchedKey ? (levels[matchedKey] || 0) : 0;
+    });
+
+    // If no depGraph available, use docOrder position as level fallback
+    const hasDepGraph = Object.keys(depGraph).length > 0;
+    if (!hasDepGraph && docOrder.length) {
+      groupKeys.forEach(gk => {
+        const firstName = groups[gk][0]?.docName?.replace(/\.md$/i, '').toLowerCase() || '';
+        const orderIdx = docOrder.findIndex(dk => firstName.includes(dk) || dk.includes(firstName));
+        groupLevels[gk] = orderIdx >= 0 ? orderIdx : groupKeys.indexOf(gk);
+      });
+    }
+
+    // Sort groups by level, then alphabetically within same level 
+    const sortedKeys = [...groupKeys].sort((a, b) => {
+      const la = groupLevels[a] || 0;
+      const lb = groupLevels[b] || 0;
+      if (la !== lb) return la - lb;
+      return a.localeCompare(b);
+    });
+
+    // Assign positions: waterfall — each level gets its own row band
+    // Multiple docs at same level → spread horizontally
+    const levelGroups = {};
+    sortedKeys.forEach(gk => {
+      const lv = groupLevels[gk] || 0;
+      if (!levelGroups[lv]) levelGroups[lv] = [];
+      levelGroups[lv].push(gk);
+    });
+
+    let yBand = startY;
+    const levelKeys = Object.keys(levelGroups).map(Number).sort((a, b) => a - b);
+
+    for (const lv of levelKeys) {
+      const gks = levelGroups[lv];
+      let maxSections = 0;
+
+      gks.forEach((gk, gi) => {
+        const group = groups[gk];
+        maxSections = Math.max(maxSections, group.length);
+        group.forEach((node, ni) => {
+          node.x = startX + gi * (colWidth + colGap);
+          node.y = yBand + ni * (rowHeight + rowGap);
+        });
+      });
+
+      // Next level starts after tallest column in this level
+      yBand += maxSections * (rowHeight + rowGap) + 40;
+    }
   }
 
   // ── RENDERING ──
@@ -146,10 +233,14 @@ const ImpactMapModule = (() => {
     const docs = state.context?.documents || [];
     const d = im();
 
-    // Rebuild nodes from docs if needed
-    if (docs.length && (!d.nodes.length || d.nodes.length === 0)) {
+    // Rebuild nodes when docs change (added/removed/renamed)
+    const docFingerprint = docs.map(dc => (dc.id || dc.name) + ':' + dc.name).sort().join('|');
+    const nodeDocIds = [...new Set(d.nodes.map(n => n.docId + ':' + n.docName))].sort().join('|');
+    if (docs.length && (docFingerprint !== nodeDocIds || !d.nodes.length)) {
       d.nodes = splitDocsToNodes(docs);
       layoutNodes(d.nodes);
+      d.edges = [];
+      d.analyzed = false;
       save();
     }
 
@@ -224,7 +315,7 @@ const ImpactMapModule = (() => {
 
     overlay.innerHTML = d.nodes.map(node => {
       const isEditing = _editingNodeId === node.id;
-      const truncated = node.content.length > 120 ? node.content.slice(0, 120) + '…' : node.content;
+      const truncated = node.content.length > 200 ? node.content.slice(0, 200) + '…' : node.content;
 
       return `<div class="im-node${node.edited ? ' edited' : ''}" style="left:${node.x}px;top:${node.y}px" id="imn-${node.id}">
         <div class="im-node-doc">${esc(node.docName)}</div>

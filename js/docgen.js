@@ -894,9 +894,94 @@ Return ONLY valid JSON:
     render();
   }
 
+  /** Find doc key by display name (for cross-check issue matching) */
+  function findDocKeyByName(name) {
+    if (!name) return null;
+    const clean = name.replace(/\.md$/i, '').toLowerCase();
+    return Object.keys(DOC_TYPES).find(k => {
+      const n = DOC_TYPES[k].name.replace(/\.md$/i, '').toLowerCase();
+      return n === clean || n.includes(clean) || clean.includes(n);
+    }) || null;
+  }
+
+  /** Auto-fix a doc: regenerate its markdown with cross-check fix instruction */
+  async function autoFixDoc(docKey, issueIdx) {
+    const d = dg();
+    const doc = d.docs[docKey];
+    const dt = DOC_TYPES[docKey];
+    const cc = d.crossCheck;
+    if (!doc?.markdown || !cc || _busy) return;
+
+    const issue = cc.issues?.[issueIdx];
+    if (!issue) return;
+
+    setBusy(true);
+    toast(`🔧 Auto-fixing ${dt?.name}...`, 'ok');
+
+    const otherDocs = Object.entries(d.docs)
+      .filter(([k]) => k !== docKey && d.docs[k]?.markdown)
+      .map(([k, v]) => `--- ${DOC_TYPES[k]?.name} ---\n${v.markdown}`)
+      .join('\n\n');
+
+    try {
+      const text = await callAnthropic(state.apiKey, state.model, `You are revising a project document to fix a consistency issue found during cross-check.
+
+PROJECT: ${d.projectDesc}
+
+CURRENT DOCUMENT (${dt?.name}):
+${doc.markdown}
+
+OTHER DOCS FOR REFERENCE:
+${otherDocs}
+
+ISSUE TO FIX:
+- Problem: ${issue.description}
+- Suggestion: ${issue.suggestion || 'Fix the inconsistency'}
+
+Rewrite the ENTIRE document with this fix applied. Keep the same structure, format, and level of detail. Only change what's necessary to resolve the issue. Ensure consistency with other docs.
+
+IMPORTANT: Return ONLY the markdown content, no JSON wrapping, no code fences. Start with the # heading.`, 8000);
+
+      doc.markdown = text.replace(/^\`\`\`(?:markdown)?\n?/, '').replace(/\n?\`\`\`$/, '');
+      // Remove the fixed issue from cross-check
+      cc.issues.splice(issueIdx, 1);
+      if (cc.issues.length === 0) cc.summary = t('dgAllConsistent');
+      save();
+      setBusy(false);
+      render();
+      toast(`✅ ${dt?.name} ${t('dgFixed')}`, 'ok');
+    } catch (e) {
+      toast(t('aiError') + e.message, 'err');
+      setBusy(false);
+    }
+  }
+
+  /** Edit a completed doc: clear markdown, go to builder with fix hints */
+  function editDoc(docKey) {
+    const d = dg();
+    const doc = d.docs[docKey];
+    if (!doc) return;
+    // Store fix hints from cross-check if available
+    const cc = d.crossCheck;
+    if (cc?.issues?.length) {
+      const relatedIssues = cc.issues.filter(i => findDocKeyByName(i.doc) === docKey);
+      if (relatedIssues.length) {
+        doc._fixHints = relatedIssues.map(i => ({ description: i.description, suggestion: i.suggestion }));
+      }
+    }
+    // Clear markdown to go back to questions mode
+    doc.markdown = '';
+    d.currentDoc = docKey;
+    d.currentStep = 3;
+    d._expandedQ = null;
+    save();
+    render();
+  }
+
   return {
     DOC_TYPES, render, goStep, analyze, toggleDoc, startBuilder, selectDoc, answer, setNote,
     generateMarkdown, runCrossCheck, copyDoc, downloadDoc, downloadAll, injectToContext,
-    bindUpload, handleUploadFiles, removeUpload, skipWithUploads, reset, expandQ
+    bindUpload, handleUploadFiles, removeUpload, skipWithUploads, reset, expandQ,
+    autoFixDoc, editDoc
   };
 })();
