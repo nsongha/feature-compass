@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Doc Generator** (`doc-generator.html`): standalone AI-guided tool tạo bộ docs dự án — 5-step flow: Setup → AI Analysis → Guided Builder → Cross-Check → Export
 - **Git Commit Rule** (`.agents/rules/git-commit.md`): quy tắc chi tiết cho commit messages — format, body requirements, ví dụ tốt/xấu
 - **CHANGELOG + docs update steps** trong `task-completion.md` workflow (steps 4-5)
 

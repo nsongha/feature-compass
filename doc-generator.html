@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doc Generator — AI-Guided Project Docs</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f6f2;--sur:#fff;--sur2:#f0efe9;--sur3:#e8e7e1;
+  --bd:rgba(0,0,0,0.09);--bdm:rgba(0,0,0,0.17);--bds:rgba(0,0,0,0.28);
+  --tx:#181816;--tx2:#6a6960;--tx3:#9c9a90;
+  --red:#E24B4A;--rbg:#FCEBEB;--rtx:#A32D2D;
+  --amb:#EF9F27;--abg:#FAEEDA;--atx:#854F0B;
+  --pur:#7F77DD;--pbg:#EEEDFE;--ptx:#534AB7;
+  --grn:#1D9E75;--gbg:#EAF3DE;--gtx:#3B6D11;
+  --blu:#185fa5;--bbg:#E6F1FB;--btx:#185fa5;
+  --r:9px;--rl:13px;
+  --fn:system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#131311;--sur:#1d1d1a;--sur2:#242420;--sur3:#2c2c28;
+  --bd:rgba(255,255,255,0.07);--bdm:rgba(255,255,255,0.14);--bds:rgba(255,255,255,0.24);
+  --tx:#e6e4dc;--tx2:#98968e;--tx3:#5a5954;
+  --rbg:#501313;--rtx:#F09595;--abg:#412402;--atx:#FAC775;
+  --pbg:#26215C;--ptx:#AFA9EC;--gbg:#173404;--gtx:#97C459;
+  --bbg:#042C53;--btx:#85B7EB;
+}}
+body{background:var(--bg);color:var(--tx);font-family:var(--fn);min-height:100vh}
+
+/* HEADER */
+.hdr{background:var(--sur);border-bottom:0.5px solid var(--bd);padding:14px 24px;position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.hdr-l h1{font-size:14px;font-weight:600;letter-spacing:-.01em}
+.hdr-l p{font-size:11px;color:var(--tx2);margin-top:2px}
+.hdr-r{display:flex;align-items:center;gap:10px}
+.pbar{width:140px;height:3px;background:var(--bd);border-radius:2px;overflow:hidden}
+.pfill{height:100%;background:var(--grn);border-radius:2px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+.plbl{font-size:11px;color:var(--tx2);white-space:nowrap}
+
+/* BUTTONS */
+.xbtn{padding:7px 16px;background:var(--tx);color:var(--bg);border:none;border-radius:var(--r);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--fn);transition:opacity .15s;white-space:nowrap}
+.xbtn:hover{opacity:.82}.xbtn:disabled{opacity:.28;cursor:not-allowed}
+.btn-s{padding:6px 12px;border:0.5px solid var(--bdm);border-radius:var(--r);font-size:12px;cursor:pointer;background:transparent;color:var(--tx);font-family:var(--fn);transition:all .15s}
+.btn-s:hover{background:var(--sur2)}.btn-s:disabled{opacity:.3;cursor:not-allowed}
+.btn-g{background:var(--gbg);color:var(--gtx);border-color:var(--grn)}
+
+/* LAYOUT */
+.wrap{max-width:860px;margin:0 auto;padding:24px 18px 80px}
+
+/* STEPS NAV */
+.steps-nav{display:flex;gap:0;margin-bottom:24px;border-radius:var(--rl);overflow:hidden;border:0.5px solid var(--bd);background:var(--sur)}
+.step-tab{flex:1;padding:10px 8px;text-align:center;font-size:11px;font-weight:500;color:var(--tx3);cursor:pointer;border-right:0.5px solid var(--bd);transition:all .15s;position:relative}
+.step-tab:last-child{border-right:none}
+.step-tab.active{background:var(--sur2);color:var(--tx);font-weight:600}
+.step-tab.done{color:var(--gtx)}
+.step-tab.done::after{content:'✓';margin-left:4px;font-size:10px}
+.step-tab:not(.active):not(.done){pointer-events:none}
+
+/* STEP PANELS */
+.step-panel{display:none}
+.step-panel.active{display:block}
+
+/* SETUP FORM */
+.form-group{margin-bottom:16px}
+.form-label{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--tx2);margin-bottom:6px;display:block}
+.form-input{width:100%;padding:10px 12px;border:0.5px solid var(--bdm);border-radius:var(--r);background:var(--sur);color:var(--tx);font-size:13px;font-family:var(--fn);transition:border-color .15s;outline:none}
+.form-input:focus{border-color:var(--grn)}
+textarea.form-input{resize:vertical;min-height:120px;line-height:1.6}
+.form-hint{font-size:10px;color:var(--tx3);margin-top:4px;line-height:1.5}
+select.form-input{cursor:pointer}
+
+/* DOC CARDS (step 2) */
+.doc-card{background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--rl);padding:14px 16px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px;transition:all .15s}
+.doc-card.selected{border-color:var(--grn);background:var(--gbg)}
+.doc-toggle{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--bdm);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;transition:all .15s;font-size:11px;color:transparent}
+.doc-card.selected .doc-toggle{border-color:var(--grn);background:var(--grn);color:#fff}
+.doc-info{flex:1}
+.doc-name{font-size:13px;font-weight:600;margin-bottom:3px}
+.doc-desc{font-size:11px;color:var(--tx2);line-height:1.5}
+.doc-badge{font-size:10px;padding:2px 7px;border-radius:5px;white-space:nowrap;font-weight:500}
+
+/* BUILDER (step 3) */
+.builder-layout{display:flex;gap:20px;min-height:60vh}
+.builder-sidebar{width:200px;flex-shrink:0}
+.builder-main{flex:1;min-width:0}
+.doc-nav-item{width:100%;text-align:left;padding:8px 12px;border:none;background:transparent;cursor:pointer;font-size:12px;color:var(--tx2);font-family:var(--fn);transition:all .1s;border-radius:var(--r);margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.doc-nav-item:hover{background:var(--sur2)}
+.doc-nav-item.active{background:var(--sur3);color:var(--tx);font-weight:600}
+.doc-nav-item .nav-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:var(--tx3)}
+.doc-nav-item.done .nav-dot{background:var(--grn)}
+.doc-nav-item.active .nav-dot{background:var(--blu)}
+
+/* QUESTION CARD */
+.q-card{background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--rl);padding:18px 20px;margin-bottom:12px}
+.q-label{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px}
+.q-text{font-size:14px;font-weight:500;line-height:1.5;margin-bottom:14px}
+.q-options{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.q-opt{border:0.5px solid var(--bd);border-radius:var(--r);padding:10px 12px;cursor:pointer;transition:all .15s;display:flex;align-items:flex-start;gap:8px}
+.q-opt:hover{border-color:var(--bdm);background:var(--sur2)}
+.q-opt.sel{border-color:var(--grn);background:var(--gbg)}
+.q-radio{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--bdm);flex-shrink:0;margin-top:1px;transition:all .15s;display:flex;align-items:center;justify-content:center}
+.q-opt.sel .q-radio{border-color:var(--grn);background:var(--grn)}
+.q-rdot{width:5px;height:5px;border-radius:50%;background:#fff;display:none}
+.q-opt.sel .q-rdot{display:block}
+.q-opt-text{flex:1}
+.q-opt-label{font-size:12px;font-weight:500;line-height:1.4}
+.q-opt-desc{font-size:11px;color:var(--tx2);margin-top:2px;line-height:1.45}
+.q-note{margin-top:8px}
+.q-note textarea{width:100%;padding:7px 10px;border:0.5px solid var(--bdm);border-radius:var(--r);background:var(--sur2);color:var(--tx);font-size:11px;font-family:var(--fn);outline:none;resize:none;height:48px;line-height:1.5;transition:border-color .15s}
+.q-note textarea:focus{border-color:var(--grn);height:72px}
+.q-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+
+/* PREVIEW PANEL */
+.preview-panel{background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--rl);padding:16px 18px;margin-top:16px}
+.preview-title{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--tx2);margin-bottom:10px}
+pre.md-pre{font-size:11px;line-height:1.7;color:var(--tx);font-family:'SF Mono','Fira Code','Consolas',monospace;white-space:pre-wrap;word-break:break-word;max-height:400px;overflow-y:auto;background:var(--sur2);padding:14px;border-radius:var(--r)}
+
+/* CROSS-CHECK (step 4) */
+.check-item{background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--r);padding:10px 14px;margin-bottom:6px;display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.5}
+.check-icon{flex-shrink:0;font-size:14px}
+.check-ok{color:var(--grn)}.check-warn{color:var(--amb)}.check-err{color:var(--red)}
+.check-text{flex:1}
+.check-fix{font-size:11px;color:var(--blu);cursor:pointer;text-decoration:underline;margin-left:8px;flex-shrink:0}
+
+/* EXPORT (step 5) */
+.export-card{background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--rl);padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.export-name{font-size:13px;font-weight:500}
+.export-size{font-size:11px;color:var(--tx3)}
+.export-actions{display:flex;gap:6px}
+
+/* LOADING */
+.loading{text-align:center;padding:40px 20px}
+.loading-spin{animation:spin 1s linear infinite;width:28px;height:28px;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:12px;color:var(--tx2)}
+
+/* SECTION DIVIDER */
+.sec-div{border:none;border-top:0.5px solid var(--bd);margin:24px 0}
+
+/* TOAST */
+.toast-box{position:fixed;bottom:20px;right:20px;z-index:100;display:flex;flex-direction:column;gap:6px}
+.toast{padding:8px 14px;border-radius:var(--r);font-size:12px;animation:fadeIn .2s;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.toast-ok{background:var(--gbg);color:var(--gtx);border:0.5px solid var(--grn)}
+.toast-err{background:var(--rbg);color:var(--rtx);border:0.5px solid var(--red)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* EMPTY STATE */
+.empty-msg{text-align:center;padding:40px;color:var(--tx3);font-size:13px}
+
+/* RESPONSIVE */
+@media(max-width:640px){
+  .wrap{padding:16px 12px 60px}
+  .hdr{padding:12px 14px}
+  .builder-layout{flex-direction:column}
+  .builder-sidebar{width:100%;display:flex;gap:4px;overflow-x:auto;padding-bottom:8px}
+  .doc-nav-item{white-space:nowrap;flex-shrink:0}
+  .steps-nav{font-size:10px}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-l">
+    <h1>Doc Generator — AI-Guided Project Docs</h1>
+    <p>Tạo bộ docs đầy đủ cho dự án • Step <span id="cur-step">1</span>/5</p>
+  </div>
+  <div class="hdr-r">
+    <div class="pbar"><div class="pfill" id="pfill" style="width:0%"></div></div>
+    <span class="plbl" id="plbl">0%</span>
+    <button class="xbtn" id="export-btn" disabled onclick="DG.goStep(5)">Export All</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <!-- STEP NAV -->
+  <div class="steps-nav" id="steps-nav">
+    <div class="step-tab active" data-step="1" onclick="DG.goStep(1)">1. Setup</div>
+    <div class="step-tab" data-step="2" onclick="DG.goStep(2)">2. Docs Plan</div>
+    <div class="step-tab" data-step="3" onclick="DG.goStep(3)">3. Builder</div>
+    <div class="step-tab" data-step="4" onclick="DG.goStep(4)">4. Cross-Check</div>
+    <div class="step-tab" data-step="5" onclick="DG.goStep(5)">5. Export</div>
+  </div>
+
+  <!-- STEP 1: SETUP -->
+  <div class="step-panel active" id="step-1">
+    <div class="form-group">
+      <label class="form-label">API Key (Anthropic)</label>
+      <input type="password" class="form-input" id="api-key" placeholder="sk-ant-..." autocomplete="off">
+      <div class="form-hint">Lưu locally trong browser. Chỉ gửi tới Anthropic API.</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Model</label>
+      <select class="form-input" id="model-sel">
+        <option value="claude-haiku-4-5-20251001">Haiku 4.5 — Nhanh & rẻ</option>
+        <option value="claude-sonnet-4-20250514" selected>Sonnet 4 — Cân bằng</option>
+        <option value="claude-opus-4-20250514">Opus 4 — Mạnh nhất</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mô tả dự án</label>
+      <textarea class="form-input" id="proj-desc" rows="6" placeholder="Mô tả dự án của bạn — what, why, target users, tech preferences, scale dự kiến, team size...&#10;&#10;VD: Xây dựng hệ thống quản lý giải đấu Pickleball cho 3 app (Admin Web, Referee App, Athlete App). Dùng React + Supabase. Team 1 người, target 50 giải/năm..."></textarea>
+      <div class="form-hint">Càng chi tiết → AI đề xuất docs càng chính xác. Tối thiểu 2-3 câu.</div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="xbtn" onclick="DG.analyzeProject()" id="btn-analyze">Analyze & Plan Docs →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: DOCS PLAN -->
+  <div class="step-panel" id="step-2">
+    <div id="analysis-result"></div>
+    <div id="docs-list"></div>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:16px" id="step2-actions" style="display:none">
+      <button class="btn-s" onclick="DG.goStep(1)">← Quay lại</button>
+      <button class="xbtn" onclick="DG.startBuilder()" id="btn-start-build">Start Building →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: BUILDER -->
+  <div class="step-panel" id="step-3">
+    <div class="builder-layout">
+      <div class="builder-sidebar" id="builder-nav"></div>
+      <div class="builder-main" id="builder-main">
+        <div class="empty-msg">Chọn một document từ sidebar để bắt đầu.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: CROSS-CHECK -->
+  <div class="step-panel" id="step-4">
+    <div id="crosscheck-result">
+      <div class="empty-msg">Nhấn "Run Cross-Check" để AI kiểm tra tính nhất quán giữa các docs.</div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:16px">
+      <button class="btn-s" onclick="DG.goStep(3)">← Quay lại Builder</button>
+      <div style="display:flex;gap:8px">
+        <button class="xbtn" onclick="DG.runCrossCheck()" id="btn-crosscheck">Run Cross-Check</button>
+        <button class="btn-s btn-g" onclick="DG.goStep(5)">Export →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5: EXPORT -->
+  <div class="step-panel" id="step-5">
+    <div id="export-list"></div>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:16px">
+      <button class="btn-s" onclick="DG.goStep(4)">← Cross-Check</button>
+      <button class="xbtn" onclick="DG.downloadAll()">Download All (.md files)</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-box" id="toasts"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// DOC GENERATOR — Main Logic
+// ═══════════════════════════════════════════
+
+const DOC_TYPES = {
+  decisions: { name:'DECISIONS.md', icon:'⚡', desc:'Tech & architecture decisions — chốt lựa chọn và lý do' },
+  prd: { name:'PRD.md', icon:'📋', desc:'Product Requirements — features, user stories, acceptance criteria' },
+  tech_stack: { name:'TECH_STACK.md', icon:'🔧', desc:'Technology choices & rationale — framework, DB, hosting' },
+  data_schema: { name:'DATA_SCHEMA.md', icon:'🗄️', desc:'Database schema design — tables, relationships, constraints' },
+  api_contract: { name:'API_CONTRACT.md', icon:'🔌', desc:'API endpoint specs — routes, request/response, auth' },
+  auth_flow: { name:'AUTH_FLOW.md', icon:'🔐', desc:'Authentication & authorization flow — login, roles, permissions' },
+  deployment: { name:'DEPLOYMENT.md', icon:'🚀', desc:'Deploy strategy — hosting, CI/CD, environments' },
+};
+
+const DG = {
+  state: {
+    apiKey: '', model: 'claude-sonnet-4-20250514', projectDesc: '',
+    analysis: null, // AI analysis result
+    selectedDocs: [], // doc type keys
+    docs: {}, // { [docKey]: { sections: [...], answers: {...}, markdown: '' } }
+    crossCheck: null,
+    currentStep: 1, currentDoc: null,
+  },
+
+  // ── STATE ──
+  load() {
+    try {
+      const s = localStorage.getItem('doc-gen-state');
+      if (s) this.state = { ...this.state, ...JSON.parse(s) };
+    } catch(e){}
+  },
+  save() {
+    try { localStorage.setItem('doc-gen-state', JSON.stringify(this.state)); } catch(e){}
+  },
+
+  // ── INIT ──
+  init() {
+    this.load();
+    document.getElementById('api-key').value = this.state.apiKey;
+    document.getElementById('model-sel').value = this.state.model;
+    document.getElementById('proj-desc').value = this.state.projectDesc;
+    // Restore step if needed
+    if (this.state.analysis && this.state.selectedDocs.length) {
+      this.renderDocsplan();
+      if (Object.keys(this.state.docs).length) {
+        this.renderBuilderNav();
+      }
+    }
+    this.goStep(this.state.currentStep);
+    this.updateProgress();
+  },
+
+  // ── NAVIGATION ──
+  goStep(n) {
+    // Validate can go to step
+    if (n > 1 && !this.state.analysis) return;
+    if (n > 2 && !this.state.selectedDocs.length) return;
+    this.state.currentStep = n;
+    this.save();
+    document.getElementById('cur-step').textContent = n;
+    document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('step-' + n).classList.add('active');
+    document.querySelectorAll('.step-tab').forEach(t => {
+      const ts = parseInt(t.dataset.step);
+      t.classList.toggle('active', ts === n);
+      t.classList.toggle('done', ts < n);
+      // Allow clicking completed or current steps
+      t.style.pointerEvents = (ts <= n || t.classList.contains('done')) ? 'auto' : 'none';
+    });
+    if (n === 3) this.renderBuilderNav();
+    if (n === 5) this.renderExport();
+    this.updateProgress();
+    document.getElementById('export-btn').disabled = n < 3;
+  },
+
+  updateProgress() {
+    const total = this.state.selectedDocs.length || 1;
+    let done = 0;
+    this.state.selectedDocs.forEach(k => {
+      if (this.state.docs[k]?.markdown) done++;
+    });
+    const pct = Math.round(done / total * 100);
+    document.getElementById('pfill').style.width = pct + '%';
+    document.getElementById('plbl').textContent = done + '/' + total + ' docs';
+  },
+
+  // ── STEP 1: ANALYZE PROJECT ──
+  async analyzeProject() {
+    const apiKey = document.getElementById('api-key').value.trim();
+    const model = document.getElementById('model-sel').value;
+    const desc = document.getElementById('proj-desc').value.trim();
+    if (!apiKey) { this.toast('Cần nhập API key', 'err'); return; }
+    if (!desc || desc.length < 20) { this.toast('Mô tả dự án quá ngắn (tối thiểu 20 ký tự)', 'err'); return; }
+    this.state.apiKey = apiKey; this.state.model = model; this.state.projectDesc = desc;
+    this.save();
+
+    const btn = document.getElementById('btn-analyze');
+    btn.disabled = true; btn.textContent = 'Analyzing...';
+
+    try {
+      const result = await this.callAI(`You are a senior software architect helping plan project documentation.
+
+PROJECT DESCRIPTION:
+${desc}
+
+Analyze this project and recommend which documentation files are needed. Choose from these types:
+- decisions: Tech & architecture decisions
+- prd: Product Requirements Document
+- tech_stack: Technology choices & rationale
+- data_schema: Database schema design
+- api_contract: API endpoint specifications
+- auth_flow: Authentication & authorization flow
+- deployment: Deployment strategy
+
+Return ONLY valid JSON (no markdown fences):
+{
+  "project_summary": "<2-3 sentence summary of the project>",
+  "recommended_docs": [
+    { "key": "<doc type key>", "reason": "<why this doc is needed>", "priority": "critical|important|nice_to_have" }
+  ],
+  "suggested_order": ["<doc key in recommended creation order>"],
+  "notes": "<any important observations about the project>"
+}`);
+
+      this.state.analysis = result;
+      this.state.selectedDocs = result.suggested_order || result.recommended_docs.map(d => d.key);
+      this.save();
+      this.renderDocsplan();
+      this.goStep(2);
+      this.toast('Phân tích hoàn tất', 'ok');
+    } catch(e) {
+      this.toast('Lỗi: ' + e.message, 'err');
+    }
+    btn.disabled = false; btn.textContent = 'Analyze & Plan Docs →';
+  },
+
+  // ── STEP 2: RENDER DOCS PLAN ──
+  renderDocsplan() {
+    const a = this.state.analysis;
+    if (!a) return;
+    const prioColors = { critical: 'var(--rbg);color:var(--rtx)', important: 'var(--abg);color:var(--atx)', nice_to_have: 'var(--sur2);color:var(--tx3)' };
+
+    document.getElementById('analysis-result').innerHTML = `
+      <div style="background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--rl);padding:16px 18px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--tx2);margin-bottom:8px">AI Analysis</div>
+        <div style="font-size:13px;line-height:1.6">${this.esc(a.project_summary || '')}</div>
+        ${a.notes ? `<div style="font-size:11px;color:var(--tx2);margin-top:8px;padding-top:8px;border-top:0.5px solid var(--bd)">💡 ${this.esc(a.notes)}</div>` : ''}
+      </div>`;
+
+    const recs = a.recommended_docs || [];
+    document.getElementById('docs-list').innerHTML = `
+      <div style="font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--tx2);margin-bottom:10px">Docs đề xuất — click để toggle</div>
+      ${recs.map(r => {
+        const dt = DOC_TYPES[r.key]; if (!dt) return '';
+        const sel = this.state.selectedDocs.includes(r.key);
+        return `<div class="doc-card${sel?' selected':''}" onclick="DG.toggleDoc('${r.key}',this)">
+          <div class="doc-toggle">${sel?'✓':''}</div>
+          <div class="doc-info">
+            <div class="doc-name">${dt.icon} ${dt.name}</div>
+            <div class="doc-desc">${this.esc(r.reason)}</div>
+          </div>
+          <span class="doc-badge" style="background:${prioColors[r.priority] || prioColors.nice_to_have}">${r.priority}</span>
+        </div>`;
+      }).join('')}`;
+  },
+
+  toggleDoc(key, el) {
+    const idx = this.state.selectedDocs.indexOf(key);
+    if (idx >= 0) this.state.selectedDocs.splice(idx, 1);
+    else this.state.selectedDocs.push(key);
+    this.save();
+    el.classList.toggle('selected');
+    el.querySelector('.doc-toggle').textContent = el.classList.contains('selected') ? '✓' : '';
+  },
+
+  // ── STEP 3: BUILDER ──
+  async startBuilder() {
+    if (!this.state.selectedDocs.length) { this.toast('Chọn ít nhất 1 doc', 'err'); return; }
+    // Generate sections for each doc that doesn't have them yet
+    const toGen = this.state.selectedDocs.filter(k => !this.state.docs[k]);
+    if (toGen.length) {
+      document.getElementById('btn-start-build').disabled = true;
+      document.getElementById('btn-start-build').textContent = 'Generating questions...';
+      try {
+        await this.generateDocSections(toGen);
+      } catch(e) {
+        this.toast('Lỗi: ' + e.message, 'err');
+        document.getElementById('btn-start-build').disabled = false;
+        document.getElementById('btn-start-build').textContent = 'Start Building →';
+        return;
+      }
+      document.getElementById('btn-start-build').disabled = false;
+      document.getElementById('btn-start-build').textContent = 'Start Building →';
+    }
+    this.goStep(3);
+    // Auto-select first doc
+    if (!this.state.currentDoc && this.state.selectedDocs.length) {
+      this.selectDoc(this.state.selectedDocs[0]);
+    }
+  },
+
+  async generateDocSections(keys) {
+    const allPrev = Object.entries(this.state.docs).map(([k, v]) =>
+      v.markdown ? `--- ${DOC_TYPES[k]?.name} ---\n${v.markdown}` : ''
+    ).filter(Boolean).join('\n\n');
+
+    const result = await this.callAI(`You are a senior architect helping create project documentation step by step.
+
+PROJECT: ${this.state.projectDesc}
+${allPrev ? `\nALREADY CREATED DOCS:\n${allPrev}\n` : ''}
+
+For each of these doc types, generate 3-6 key questions/sections that need to be decided. Each question should have 2-4 options to choose from.
+
+Doc types to generate for: ${keys.map(k => DOC_TYPES[k]?.name).join(', ')}
+
+Return ONLY valid JSON (no markdown fences):
+{
+  "docs": {
+    "<doc_key>": {
+      "title": "<document title>",
+      "sections": [
+        {
+          "id": "<unique_id>",
+          "question": "<question to answer>",
+          "context": "<why this matters, 1-2 sentences>",
+          "options": [
+            { "label": "<option name>", "desc": "<description>", "tag": "<recommended|alternative|advanced>" }
+          ]
+        }
+      ]
+    }
+  }
+}`);
+
+    if (result.docs) {
+      for (const [key, doc] of Object.entries(result.docs)) {
+        if (keys.includes(key)) {
+          this.state.docs[key] = { ...doc, answers: {}, notes: {}, markdown: '' };
+        }
+      }
+      this.save();
+    }
+  },
+
+  renderBuilderNav() {
+    const nav = document.getElementById('builder-nav');
+    nav.innerHTML = this.state.selectedDocs.map(k => {
+      const dt = DOC_TYPES[k];
+      const doc = this.state.docs[k];
+      const done = doc?.markdown ? true : false;
+      const active = this.state.currentDoc === k;
+      return `<button class="doc-nav-item${active?' active':''}${done?' done':''}" onclick="DG.selectDoc('${k}')">
+        <span class="nav-dot"></span>${dt?.icon || ''} ${dt?.name || k}
+      </button>`;
+    }).join('');
+  },
+
+  selectDoc(key) {
+    this.state.currentDoc = key;
+    this.save();
+    this.renderBuilderNav();
+    this.renderDocBuilder(key);
+  },
+
+  renderDocBuilder(key) {
+    const doc = this.state.docs[key];
+    const dt = DOC_TYPES[key];
+    const main = document.getElementById('builder-main');
+    if (!doc || !doc.sections) {
+      main.innerHTML = '<div class="empty-msg">Đang tải...</div>';
+      return;
+    }
+
+    const sections = doc.sections;
+    let html = `<div style="font-size:16px;font-weight:600;margin-bottom:4px">${dt?.icon || ''} ${doc.title || dt?.name}</div>
+      <div style="font-size:11px;color:var(--tx2);margin-bottom:16px">${sections.length} quyết định cần chốt</div>`;
+
+    sections.forEach((sec, i) => {
+      const answered = doc.answers[sec.id] != null;
+      html += `<div class="q-card" id="q-${sec.id}">
+        <div class="q-label">Câu ${i+1}/${sections.length}${answered ? ' · ✓ Đã trả lời' : ''}</div>
+        <div class="q-text">${this.esc(sec.question)}</div>
+        ${sec.context ? `<div style="font-size:11px;color:var(--tx2);margin-bottom:10px;line-height:1.5">💡 ${this.esc(sec.context)}</div>` : ''}
+        <div class="q-options">
+          ${(sec.options || []).map((opt, oi) => {
+            const sel = doc.answers[sec.id] === oi;
+            const tagColors = { recommended: 'background:var(--gbg);color:var(--gtx)', alternative: 'background:var(--abg);color:var(--atx)', advanced: 'background:var(--bbg);color:var(--btx)' };
+            return `<div class="q-opt${sel?' sel':''}" onclick="DG.answer('${key}','${sec.id}',${oi})">
+              <div class="q-radio"><div class="q-rdot"></div></div>
+              <div class="q-opt-text">
+                <div class="q-opt-label">${this.esc(opt.label)}</div>
+                ${opt.desc ? `<div class="q-opt-desc">${this.esc(opt.desc)}</div>` : ''}
+                ${opt.tag ? `<span class="doc-badge" style="${tagColors[opt.tag] || tagColors.alternative};font-size:10px;margin-top:3px;display:inline-block">${opt.tag}</span>` : ''}
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+        <div class="q-note">
+          <textarea placeholder="Ghi chú thêm (tùy chọn)..." oninput="DG.setNote('${key}','${sec.id}',this.value)">${this.esc(doc.notes?.[sec.id] || '')}</textarea>
+        </div>
+      </div>`;
+    });
+
+    // Actions
+    const allAnswered = sections.every(s => doc.answers[s.id] != null);
+    html += `<div class="q-actions">
+      <button class="xbtn" onclick="DG.generateMarkdown('${key}')" ${!allAnswered?'disabled':''}>${allAnswered ? 'Generate Markdown →' : 'Trả lời hết để generate'}</button>
+    </div>`;
+
+    // Preview if markdown exists
+    if (doc.markdown) {
+      html += `<div class="preview-panel">
+        <div class="preview-title">Preview — ${dt?.name}</div>
+        <pre class="md-pre">${this.esc(doc.markdown)}</pre>
+      </div>`;
+    }
+
+    main.innerHTML = html;
+  },
+
+  answer(docKey, secId, optIdx) {
+    const doc = this.state.docs[docKey];
+    if (!doc) return;
+    doc.answers[secId] = optIdx;
+    this.save();
+    this.renderDocBuilder(docKey);
+    this.updateProgress();
+  },
+
+  setNote(docKey, secId, val) {
+    const doc = this.state.docs[docKey];
+    if (!doc) return;
+    if (!doc.notes) doc.notes = {};
+    doc.notes[secId] = val;
+    this.save();
+  },
+
+  async generateMarkdown(docKey) {
+    const doc = this.state.docs[docKey];
+    const dt = DOC_TYPES[docKey];
+    if (!doc) return;
+
+    // Build context from answers
+    const answersSummary = doc.sections.map(sec => {
+      const optIdx = doc.answers[sec.id];
+      const opt = sec.options?.[optIdx];
+      const note = doc.notes?.[sec.id];
+      return `Q: ${sec.question}\nA: ${opt?.label || 'Custom'} — ${opt?.desc || ''}${note ? '\nNote: ' + note : ''}`;
+    }).join('\n\n');
+
+    // Other docs for cross-reference
+    const otherDocs = Object.entries(this.state.docs)
+      .filter(([k]) => k !== docKey && this.state.docs[k]?.markdown)
+      .map(([k, v]) => `--- ${DOC_TYPES[k]?.name} ---\n${v.markdown}`)
+      .join('\n\n');
+
+    this.toast('Đang generate ' + dt?.name + '...', 'ok');
+
+    try {
+      const result = await this.callAI(`Generate a complete ${dt?.name} markdown file based on these decisions.
+
+PROJECT: ${this.state.projectDesc}
+${otherDocs ? `\nOTHER DOCS ALREADY CREATED:\n${otherDocs}\n` : ''}
+
+DECISIONS MADE:
+${answersSummary}
+
+Generate a professional, complete markdown document. Use proper markdown formatting with headers, tables, code blocks where appropriate. Reference other docs by filename when relevant but don't force references. Keep it concise and actionable.
+
+IMPORTANT: Return ONLY the markdown content, no JSON wrapping, no code fences around the whole thing. Start directly with the # heading.`);
+
+      // result is raw text here since we asked for markdown not JSON
+      doc.markdown = typeof result === 'string' ? result : (result.content?.[0]?.text || JSON.stringify(result));
+      // Clean up any code fences wrapping
+      doc.markdown = doc.markdown.replace(/^```(?:markdown)?\n?/,'').replace(/\n?```$/,'');
+      this.save();
+      this.renderDocBuilder(docKey);
+      this.updateProgress();
+      this.toast(dt?.name + ' đã tạo xong!', 'ok');
+    } catch(e) {
+      this.toast('Lỗi: ' + e.message, 'err');
+    }
+  },
+
+  // ── STEP 4: CROSS-CHECK ──
+  async runCrossCheck() {
+    const docs = Object.entries(this.state.docs)
+      .filter(([k]) => this.state.selectedDocs.includes(k) && this.state.docs[k]?.markdown)
+      .map(([k, v]) => `--- ${DOC_TYPES[k]?.name} ---\n${v.markdown}`)
+      .join('\n\n');
+
+    if (!docs) { this.toast('Chưa có docs nào được generate', 'err'); return; }
+
+    document.getElementById('btn-crosscheck').disabled = true;
+    document.getElementById('btn-crosscheck').textContent = 'Checking...';
+
+    try {
+      const result = await this.callAI(`You are a senior architect reviewing project documentation for consistency.
+
+PROJECT: ${this.state.projectDesc}
+
+ALL DOCS:
+${docs}
+
+Cross-check all documents for:
+1. Consistency — do they agree on tech choices, naming, architecture?
+2. Completeness — is any important information missing?
+3. Orphan references — does a doc reference something not defined elsewhere?
+4. Redundancy — is the same info unnecessarily duplicated?
+5. Missing cross-references — should docs reference each other?
+
+Return ONLY valid JSON:
+{
+  "issues": [
+    { "severity": "error|warning|info", "doc": "<filename>", "description": "<what's wrong>", "suggestion": "<how to fix>" }
+  ],
+  "summary": "<overall assessment, 1-2 sentences>"
+}`);
+
+      this.state.crossCheck = result;
+      this.save();
+      this.renderCrossCheck();
+    } catch(e) {
+      this.toast('Lỗi: ' + e.message, 'err');
+    }
+    document.getElementById('btn-crosscheck').disabled = false;
+    document.getElementById('btn-crosscheck').textContent = 'Run Cross-Check';
+  },
+
+  renderCrossCheck() {
+    const cc = this.state.crossCheck;
+    if (!cc) return;
+    const icons = { error: '❌', warning: '⚠️', info: 'ℹ️' };
+    const cls = { error: 'check-err', warning: 'check-warn', info: 'check-ok' };
+    const issues = cc.issues || [];
+
+    document.getElementById('crosscheck-result').innerHTML = `
+      <div style="background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--rl);padding:14px 16px;margin-bottom:16px">
+        <div style="font-size:13px;line-height:1.6">${this.esc(cc.summary || '')}</div>
+        <div style="font-size:11px;color:var(--tx2);margin-top:6px">${issues.length} issues found</div>
+      </div>
+      ${issues.length === 0 ? '<div class="check-item"><span class="check-icon check-ok">✅</span><span class="check-text">Tất cả docs nhất quán!</span></div>' : ''}
+      ${issues.map(i => `<div class="check-item">
+        <span class="check-icon ${cls[i.severity] || ''}">${icons[i.severity] || '•'}</span>
+        <div class="check-text">
+          <strong>${this.esc(i.doc || '')}</strong> — ${this.esc(i.description || '')}
+          ${i.suggestion ? `<div style="font-size:11px;color:var(--tx2);margin-top:2px">💡 ${this.esc(i.suggestion)}</div>` : ''}
+        </div>
+      </div>`).join('')}`;
+  },
+
+  // ── STEP 5: EXPORT ──
+  renderExport() {
+    const list = document.getElementById('export-list');
+    list.innerHTML = `<div style="font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--tx2);margin-bottom:12px">Generated Documents</div>` +
+      this.state.selectedDocs.map(k => {
+        const dt = DOC_TYPES[k];
+        const doc = this.state.docs[k];
+        const md = doc?.markdown || '';
+        const size = new Blob([md]).size;
+        return `<div class="export-card">
+          <div>
+            <div class="export-name">${dt?.icon || ''} ${dt?.name || k}</div>
+            <div class="export-size">${md ? (size > 1024 ? (size/1024).toFixed(1)+'KB' : size+'B') : 'Not generated'}</div>
+          </div>
+          <div class="export-actions">
+            <button class="btn-s" onclick="DG.copyDoc('${k}')" ${!md?'disabled':''}>Copy</button>
+            <button class="btn-s" onclick="DG.downloadDoc('${k}')" ${!md?'disabled':''}>Download</button>
+            <button class="btn-s" onclick="DG.previewDoc('${k}')" ${!md?'disabled':''}>Preview</button>
+          </div>
+        </div>`;
+      }).join('') +
+      `<div id="preview-area"></div>`;
+  },
+
+  previewDoc(key) {
+    const doc = this.state.docs[key];
+    const dt = DOC_TYPES[key];
+    document.getElementById('preview-area').innerHTML = doc?.markdown ?
+      `<div class="preview-panel" style="margin-top:12px">
+        <div class="preview-title">Preview — ${dt?.name}</div>
+        <pre class="md-pre">${this.esc(doc.markdown)}</pre>
+      </div>` : '';
+  },
+
+  copyDoc(key) {
+    const md = this.state.docs[key]?.markdown;
+    if (!md) return;
+    navigator.clipboard.writeText(md).then(() => this.toast('Đã copy!', 'ok')).catch(() => {
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = md; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); this.toast('Đã copy!', 'ok'); } catch(e){}
+      document.body.removeChild(ta);
+    });
+  },
+
+  downloadDoc(key) {
+    const doc = this.state.docs[key];
+    const dt = DOC_TYPES[key];
+    if (!doc?.markdown) return;
+    const a = document.createElement('a');
+    a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(doc.markdown);
+    a.download = dt?.name || key + '.md';
+    document.body.appendChild(a); a.click();
+    setTimeout(() => document.body.removeChild(a), 200);
+  },
+
+  downloadAll() {
+    this.state.selectedDocs.forEach(k => {
+      if (this.state.docs[k]?.markdown) this.downloadDoc(k);
+    });
+    this.toast('Downloading all docs...', 'ok');
+  },
+
+  // ── AI CALL ──
+  async callAI(prompt) {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': this.state.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: this.state.model || 'claude-sonnet-4-20250514',
+        max_tokens: 8000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API ${resp.status}`);
+    }
+    const data = await resp.json();
+    const text = data.content?.[0]?.text || '';
+    // Try JSON parse
+    try { return JSON.parse(text); } catch(e) {}
+    const m = text.match(/\{[\s\S]*\}/);
+    if (m) { try { return JSON.parse(m[0]); } catch(e) {} }
+    // If not JSON, return raw text (for markdown generation)
+    return text;
+  },
+
+  // ── UTILITIES ──
+  esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; },
+
+  toast(msg, type) {
+    const box = document.getElementById('toasts');
+    const el = document.createElement('div');
+    el.className = 'toast toast-' + (type || 'ok');
+    el.textContent = msg;
+    box.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  },
+
+  // ── RESET ──
+  reset() {
+    if (!confirm('Xóa toàn bộ progress và bắt đầu lại?')) return;
+    localStorage.removeItem('doc-gen-state');
+    location.reload();
+  }
+};
+
+// Init
+DG.init();
+</script>
+</body>
+</html>

@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pickleball OS — Schema Explorer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f4f0;--sur:#fff;--sur2:#eeedea;--sur3:#e5e4e0;
+  --bd:rgba(0,0,0,0.08);--bdm:rgba(0,0,0,0.15);--bds:rgba(0,0,0,0.25);
+  --tx:#18180e;--tx2:#68675e;--tx3:#9a9890;
+  --red:#E24B4A;--rbg:#FCEBEB;--rtx:#A32D2D;
+  --amb:#EF9F27;--abg:#FAEEDA;--atx:#854F0B;
+  --grn:#1D9E75;--gbg:#EAF3DE;--gtx:#3B6D11;
+  --blu:#185fa5;--bbg:#E6F1FB;--btx:#185fa5;
+  --pur:#7F77DD;--pbg:#EEEDFE;--ptx:#534AB7;
+  --tel:#0F6E56;--tbg:#E1F5EE;--ttx:#085041;
+  --r:8px;--rl:12px;
+  --fn:system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#111110;--sur:#1a1a18;--sur2:#222220;--sur3:#2a2a28;
+  --bd:rgba(255,255,255,0.07);--bdm:rgba(255,255,255,0.13);--bds:rgba(255,255,255,0.22);
+  --tx:#e4e2da;--tx2:#96948c;--tx3:#56554f;
+  --rbg:#501313;--rtx:#F09595;--abg:#412402;--atx:#FAC775;
+  --gbg:#173404;--gtx:#97C459;--bbg:#042C53;--btx:#85B7EB;
+  --pbg:#26215C;--ptx:#AFA9EC;--tbg:#04342C;--ttx:#5DCAA5;
+}}
+body{background:var(--bg);color:var(--tx);font-family:var(--fn);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* HEADER */
+.hdr{background:var(--sur);border-bottom:0.5px solid var(--bd);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;flex-wrap:wrap}
+.hdr-l{display:flex;align-items:center;gap:16px}
+.hdr-l h1{font-size:14px;font-weight:600}
+.hdr-l p{font-size:11px;color:var(--tx2)}
+.filter-row{display:flex;gap:6px;flex-wrap:wrap}
+.ftag{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:0.5px solid var(--bdm);background:transparent;color:var(--tx2);transition:all .15s;font-family:var(--fn)}
+.ftag:hover{border-color:var(--bds)}
+.ftag.active{color:#fff;border-color:transparent}
+.ftag.f-all.active{background:#555}
+.ftag.f-admin.active{background:var(--blu)}
+.ftag.f-referee.active{background:var(--red)}
+.ftag.f-athlete.active{background:var(--grn)}
+.ftag.f-shared.active{background:var(--pur)}
+
+/* MAIN LAYOUT */
+.main{display:flex;flex:1;overflow:hidden}
+
+/* LEFT: TABLE LIST */
+.sidebar{width:260px;flex-shrink:0;background:var(--sur);border-right:0.5px solid var(--bd);overflow-y:auto;padding:12px 0}
+.domain-label{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);padding:10px 16px 4px}
+.domain-label:first-child{padding-top:4px}
+.tbl-btn{width:100%;text-align:left;padding:7px 16px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s;font-family:var(--fn)}
+.tbl-btn:hover{background:var(--sur2)}
+.tbl-btn.active{background:var(--sur3)}
+.tbl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.tbl-name{font-size:12px;font-weight:500;color:var(--tx)}
+.tbl-count{font-size:10px;color:var(--tx3);margin-left:auto}
+.tbl-apps{display:flex;gap:2px;margin-left:4px}
+.app-pip{width:5px;height:5px;border-radius:50%}
+
+/* RIGHT: DETAIL PANEL */
+.detail{flex:1;overflow-y:auto;padding:20px 24px}
+
+/* OVERVIEW PANEL */
+.overview{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:20px}
+.ov-card{background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--rl);padding:14px 16px;cursor:pointer;transition:border-color .15s}
+.ov-card:hover{border-color:var(--bdm)}
+.ov-domain{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px}
+.ov-tables{display:flex;flex-wrap:wrap;gap:4px}
+.ov-tbl{font-size:11px;padding:2px 7px;border-radius:5px;background:var(--sur2);color:var(--tx2)}
+
+/* TABLE DETAIL */
+.tbl-header{margin-bottom:16px}
+.tbl-title{font-size:20px;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.tbl-desc{font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px}
+.tbl-meta{display:flex;gap:8px;flex-wrap:wrap}
+.meta-pill{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500}
+
+/* COLUMNS */
+.cols-title{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--tx2);margin-bottom:8px}
+.col-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px}
+.col-table th{text-align:left;padding:6px 10px;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--tx3);border-bottom:0.5px solid var(--bd)}
+.col-table td{padding:7px 10px;border-bottom:0.5px solid var(--bd);vertical-align:top;line-height:1.5}
+.col-table tr:last-child td{border-bottom:none}
+.col-table tr:hover td{background:var(--sur2)}
+.col-name{font-family:'SF Mono','Fira Code',monospace;font-weight:500;color:var(--tx)}
+.col-pk{color:var(--amb)}
+.col-fk{color:var(--blu)}
+.col-type{color:var(--tx3);font-family:'SF Mono','Fira Code',monospace;font-size:11px}
+.col-note{color:var(--tx2)}
+.badge-pk{background:var(--abg);color:var(--atx);font-size:9px;padding:1px 5px;border-radius:3px;font-weight:600;margin-left:4px}
+.badge-fk{background:var(--bbg);color:var(--btx);font-size:9px;padding:1px 5px;border-radius:3px;font-weight:600;margin-left:4px}
+.badge-null{background:var(--sur2);color:var(--tx3);font-size:9px;padding:1px 5px;border-radius:3px;margin-left:4px}
+
+/* RELATIONS */
+.rel-section{margin-bottom:20px}
+.rel-title{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--tx2);margin-bottom:8px}
+.rel-list{display:flex;flex-direction:column;gap:5px}
+.rel-item{background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--r);padding:8px 12px;font-size:12px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:border-color .15s}
+.rel-item:hover{border-color:var(--bdm)}
+.rel-arrow{color:var(--tx3);flex-shrink:0}
+.rel-tbl{font-family:'SF Mono','Fira Code',monospace;font-weight:500}
+.rel-desc{color:var(--tx2);flex:1}
+
+/* DESIGN NOTES */
+.notes-section{background:var(--sur2);border-radius:var(--rl);padding:14px 16px;margin-bottom:20px}
+.notes-title{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--tx2);margin-bottom:8px}
+.note-item{font-size:12px;color:var(--tx2);line-height:1.6;display:flex;gap:8px;margin-bottom:6px}
+.note-item:last-child{margin-bottom:0}
+.note-icon{flex-shrink:0;margin-top:1px}
+
+/* APP ACCESS */
+.app-access{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.app-badge{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:500}
+
+/* EDGE FUNCTIONS */
+.ef-section{margin-bottom:20px}
+.ef-item{background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--r);padding:10px 14px;margin-bottom:6px;font-size:12px}
+.ef-name{font-family:'SF Mono','Fira Code',monospace;font-weight:600;color:var(--pur);margin-bottom:4px}
+.ef-desc{color:var(--tx2);line-height:1.5}
+
+/* OVERVIEW STATE */
+#overview-panel{display:block}
+#detail-panel{display:none}
+.back-btn{font-size:12px;color:var(--tx2);cursor:pointer;display:flex;align-items:center;gap:4px;margin-bottom:16px;border:none;background:transparent;font-family:var(--fn);padding:0}
+.back-btn:hover{color:var(--tx)}
+
+/* DIMMED (filter) */
+.tbl-btn.dimmed{opacity:.3}
+.ov-card.dimmed{opacity:.25}
+
+@media(max-width:640px){
+  .sidebar{width:200px}
+  .hdr{padding:10px 14px}
+  .detail{padding:14px}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-l">
+    <div>
+      <h1>Pickleball OS — Schema Explorer</h1>
+      <p>28 tables · 8 Edge Functions · 3 Realtime channels</p>
+    </div>
+  </div>
+  <div class="filter-row">
+    <span style="font-size:11px;color:var(--tx3);align-self:center">Filter:</span>
+    <button class="ftag f-all active" onclick="setFilter('all',this)">Tất cả</button>
+    <button class="ftag f-admin" onclick="setFilter('admin',this)">Admin Web</button>
+    <button class="ftag f-referee" onclick="setFilter('referee',this)">Referee App</button>
+    <button class="ftag f-athlete" onclick="setFilter('athlete',this)">Athlete App</button>
+    <button class="ftag f-shared" onclick="setFilter('shared',this)">Shared</button>
+  </div>
+</div>
+
+<div class="main">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar"></div>
+
+  <!-- DETAIL -->
+  <div class="detail" id="detail">
+    <div id="overview-panel"></div>
+    <div id="detail-panel" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════
+
+const DOMAINS = [
+  { id: 'auth', label: 'Orgs & Users', color: '#7F77DD' },
+  { id: 'players', label: 'Players', color: '#185fa5' },
+  { id: 'tournaments', label: 'Tournaments', color: '#EF9F27' },
+  { id: 'registrations', label: 'Registrations', color: '#E24B4A' },
+  { id: 'schedule', label: 'Schedule & Courts', color: '#9c9a90' },
+  { id: 'matches', label: 'Matches', color: '#1D9E75' },
+  { id: 'bracket', label: 'Bracket & Standings', color: '#0F6E56' },
+  { id: 'equipment', label: 'Equipment', color: '#854F0B' },
+  { id: 'ai', label: 'AI Content', color: '#534AB7' },
+  { id: 'notifications', label: 'Notifications', color: '#6a6960' },
+];
+
+// apps: which apps read/write this table
+// A=Admin Web, R=Referee App, T=Athlete App
+const TABLES = {
+  orgs: {
+    domain:'auth', apps:['A'],
+    desc:'Tổ chức / CLB sử dụng platform. Mỗi org có slug riêng làm URL identifier, plan (free/pro), và settings JSON cho config linh hoạt.',
+    notes:['slug là URL subdomain mỗi org, VD: pickleballhn.pickleball-os.vn','plan + plan_expires_at control feature gating — freemium logic','settings JSONB cho phép mở rộng config mà không cần ALTER TABLE'],
+    relations:[{dir:'out',tbl:'profiles',desc:'profiles.org_id'},{dir:'out',tbl:'tournaments',desc:'tournaments.org_id'},{dir:'out',tbl:'players',desc:'players.home_org_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:'Primary key'},
+      {n:'slug',t:'TEXT',note:'URL identifier duy nhất: "clb-ha-noi"'},
+      {n:'name',t:'TEXT',note:'Tên hiển thị: "CLB Pickleball Hà Nội"'},
+      {n:'logo_url',t:'TEXT',null:true,note:'Logo cho overlay & scoreboard'},
+      {n:'primary_color',t:'TEXT',note:'Brand color mặc định #1D9E75'},
+      {n:'plan',t:'TEXT',note:"'free' | 'pro' | 'enterprise'"},
+      {n:'plan_expires_at',t:'TIMESTAMPTZ',null:true,note:'NULL = free forever'},
+      {n:'settings',t:'JSONB',note:'Flexible org-level config'},
+      {n:'deleted_at',t:'TIMESTAMPTZ',null:true,note:'Soft delete'},
+    ]
+  },
+  profiles: {
+    domain:'auth', apps:['A','R','T'],
+    desc:'Extended user info, quan hệ 1-1 với auth.users của Supabase. Mỗi user đăng ký đều có profile. Role quyết định quyền truy cập.',
+    notes:['1-1 với auth.users — Supabase trigger tự tạo khi user đăng ký','org_id NULL nếu là athlete tự do, không thuộc CLB nào','Role: org_admin, org_staff, referee, athlete, super_admin'],
+    relations:[{dir:'in',tbl:'auth.users',desc:'Supabase built-in'},{dir:'out',tbl:'orgs',desc:'profiles.org_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:'= auth.users.id'},
+      {n:'org_id',t:'UUID',fk:true,null:true,note:'→ orgs — NULL nếu athlete tự do'},
+      {n:'role',t:'user_role',note:'Enum: org_admin, org_staff, referee, athlete, super_admin'},
+      {n:'full_name',t:'TEXT',note:''},
+      {n:'display_name',t:'TEXT',null:true,note:'Tên ngắn hiển thị'},
+      {n:'avatar_url',t:'TEXT',null:true,note:''},
+      {n:'phone',t:'TEXT',null:true,note:''},
+      {n:'date_of_birth',t:'DATE',null:true,note:''},
+      {n:'gender',t:'TEXT',null:true,note:"'male' | 'female' | 'other'"},
+      {n:'deleted_at',t:'TIMESTAMPTZ',null:true,note:'Soft delete'},
+    ]
+  },
+  org_members: {
+    domain:'auth', apps:['A'],
+    desc:'Mapping user → org với role cụ thể. 1 user có thể thuộc nhiều org (trọng tài freelance làm cho nhiều CLB).',
+    notes:['UNIQUE (org_id, user_id) — mỗi user chỉ có 1 role per org','can_manage_* columns cho phép override role permissions nếu cần granular control','accepted_at NULL = invite chưa được accept'],
+    relations:[{dir:'out',tbl:'orgs',desc:'org_members.org_id'},{dir:'out',tbl:'auth.users',desc:'org_members.user_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'org_id',t:'UUID',fk:true,note:'→ orgs'},
+      {n:'user_id',t:'UUID',fk:true,note:'→ auth.users'},
+      {n:'role',t:'user_role',note:'Role trong org này'},
+      {n:'can_manage_tournaments',t:'BOOLEAN',note:'Permission override'},
+      {n:'can_manage_players',t:'BOOLEAN',note:'Permission override'},
+      {n:'can_view_financials',t:'BOOLEAN',note:'Permission override'},
+      {n:'invited_at',t:'TIMESTAMPTZ',note:''},
+      {n:'accepted_at',t:'TIMESTAMPTZ',null:true,note:'NULL = chưa accept'},
+      {n:'deleted_at',t:'TIMESTAMPTZ',null:true,note:'Soft delete'},
+    ]
+  },
+  players: {
+    domain:'players', apps:['A','R','T'],
+    desc:'Player profile TÁCH KHỎI auth.users. Admin Web tạo trước, Athlete App claim sau bằng email/phone. Referee App đọc tên và ảnh qua match context.',
+    notes:['user_id NULL khi chưa claim — Admin Web vẫn hoạt động bình thường','claim_token + claim_expires_at: Athlete App dùng để link account','estimated_rating được tính bởi Edge Function calculate-rating sau mỗi trận','is_claimed = FALSE nghĩa là VĐV chưa dùng Athlete App — vẫn thi đấu được'],
+    relations:[
+      {dir:'out',tbl:'auth.users',desc:'players.user_id (nullable)'},
+      {dir:'out',tbl:'orgs',desc:'players.home_org_id'},
+      {dir:'in',tbl:'registrations',desc:'registrations.player1_id / player2_id'},
+      {dir:'in',tbl:'player_ratings',desc:'player_ratings.player_id'},
+      {dir:'in',tbl:'player_skills',desc:'1-1'},
+      {dir:'in',tbl:'player_gear',desc:'player_gear.player_id'},
+      {dir:'in',tbl:'player_health',desc:'player_health.player_id'},
+      {dir:'in',tbl:'player_certificates',desc:'🆕 player_certificates.player_id'},
+    ],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'user_id',t:'UUID',fk:true,null:true,note:'→ auth.users — NULL khi chưa claim'},
+      {n:'full_name',t:'TEXT',note:''},
+      {n:'display_name',t:'TEXT',null:true,note:'Tên ngắn trên scoreboard'},
+      {n:'avatar_url',t:'TEXT',null:true,note:'Hiển thị trên Referee App khi PIN'},
+      {n:'phone',t:'TEXT',null:true,note:'Dùng để claim profile'},
+      {n:'email',t:'TEXT',null:true,note:'Dùng để claim profile'},
+      {n:'id_number',t:'TEXT',null:true,note:'CCCD/Passport cho giải chính thức'},
+      {n:'home_org_id',t:'UUID',fk:true,null:true,note:'→ orgs — CLB chính'},
+      {n:'estimated_rating',t:'NUMERIC(4,2)',null:true,note:'DUPR estimate — Edge Function tính'},
+      {n:'rating_updated_at',t:'TIMESTAMPTZ',null:true,note:''},
+      {n:'is_claimed',t:'BOOLEAN',note:'Đã link với Athlete App chưa'},
+      {n:'claim_token',t:'TEXT',null:true,note:'Token để claim profile'},
+      {n:'claim_expires_at',t:'TIMESTAMPTZ',null:true,note:'Token hết hạn'},
+      {n:'created_by',t:'UUID',fk:true,note:'Admin đã tạo player này'},
+      {n:'deleted_at',t:'TIMESTAMPTZ',null:true,note:'Soft delete'},
+    ]
+  },
+  player_ratings: {
+    domain:'players', apps:['A','T'],
+    desc:'Lịch sử rating — append-only, không bao giờ xóa. Mỗi row là 1 lần rating thay đổi sau trận đấu.',
+    notes:['Không có deleted_at — immutable historical record','delta = thay đổi so với lần trước, có thể âm','match_id link về trận gây ra thay đổi rating','Edge Function calculate-rating insert vào đây sau mỗi trận hoàn thành'],
+    relations:[{dir:'out',tbl:'players',desc:'player_ratings.player_id'},{dir:'out',tbl:'matches',desc:'player_ratings.match_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'player_id',t:'UUID',fk:true,note:'→ players'},
+      {n:'rating',t:'NUMERIC(4,2)',note:'Rating tại thời điểm này'},
+      {n:'delta',t:'NUMERIC(4,2)',null:true,note:'Thay đổi so với lần trước (+/-)'},
+      {n:'reason',t:'TEXT',null:true,note:"'match_result' | 'manual_adjustment'"},
+      {n:'match_id',t:'UUID',fk:true,null:true,note:'→ matches — trận gây ra thay đổi'},
+      {n:'calculated_at',t:'TIMESTAMPTZ',note:''},
+    ]
+  },
+  player_skills: {
+    domain:'players', apps:['T'],
+    desc:'Skills tree từ Athlete App — private, chỉ player tự thấy. 8 nhóm kỹ năng (tăng từ 6), mỗi skill score 0–10 với sub-skills chi tiết dưới dạng JSONB.',
+    notes:['RLS strict: chỉ player thấy — share_with_btc = TRUE thì org_admin chỉ thấy overall_estimate để seed, không thấy sub-skills','8 categories: mechanics, serve_return, dinking, transition, volleys, strategy + mental_game + fitness (mới)','mental_game: composure, focus, pressure_handling, adaptability, resilience','fitness: stamina, court_speed, reaction_time, lateral_movement, recovery_between_points','JSONB per category → thêm sub-skill mới không cần ALTER TABLE','Lý do private: tránh đối thủ khai thác điểm yếu từ skills data'],
+    relations:[{dir:'out',tbl:'players',desc:'1-1, player_skills.player_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'player_id',t:'UUID',fk:true,note:'→ players — UNIQUE, quan hệ 1-1'},
+      {n:'mechanics',t:'JSONB',note:'stance, grip, footwork, ready_position, split_step'},
+      {n:'serve_return',t:'JSONB',note:'deep_serve, serve_placement, power_serve, deep_return, return_consistency'},
+      {n:'dinking',t:'JSONB',note:'cross_court_dink, dink_reset, dink_consistency, dink_attack'},
+      {n:'transition',t:'JSONB',note:'kitchen_approach, reset_from_mid, third_shot_drop, fifth_shot_drop'},
+      {n:'volleys',t:'JSONB',note:'forehand_volley, backhand_volley, overhead_smash, erne, atp, speed_up'},
+      {n:'strategy',t:'JSONB',note:'stacking, poaching, third_shot_selection, lob_usage, target_selection'},
+      {n:'mental_game',t:'JSONB',note:'🆕 composure, focus, pressure_handling, adaptability, resilience'},
+      {n:'fitness',t:'JSONB',note:'🆕 stamina, court_speed, reaction_time, lateral_movement, recovery_between_points'},
+      {n:'overall_estimate',t:'NUMERIC(3,1)',null:true,note:'Weighted average → DUPR input'},
+      {n:'share_with_btc',t:'BOOLEAN',note:'Consent chia sẻ overall_estimate với Admin. Default FALSE'},
+      {n:'updated_at',t:'TIMESTAMPTZ',note:''},
+    ]
+  },
+  player_gear: {
+    domain:'players', apps:['T','A'],
+    desc:'Gear tracking của VĐV. paddle_id link vào paddles table nếu model có trong DB để auto-validate equipment.',
+    notes:['gear_type: paddle, shoes, ball, accessory','paddle_id → paddles: tự động check approved/banned status','is_active = FALSE khi không còn dùng — không hard delete'],
+    relations:[{dir:'out',tbl:'players',desc:'player_gear.player_id'},{dir:'out',tbl:'paddles',desc:'player_gear.paddle_id (nullable)'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'player_id',t:'UUID',fk:true,note:'→ players'},
+      {n:'gear_type',t:'TEXT',note:"'paddle' | 'shoes' | 'ball' | 'accessory'"},
+      {n:'brand',t:'TEXT',null:true,note:''},
+      {n:'model',t:'TEXT',null:true,note:''},
+      {n:'paddle_id',t:'UUID',fk:true,null:true,note:'→ paddles — auto-validate'},
+      {n:'is_active',t:'BOOLEAN',note:'Đang sử dụng hay không'},
+      {n:'started_using_at',t:'DATE',null:true,note:''},
+      {n:'deleted_at',t:'TIMESTAMPTZ',null:true,note:'Soft delete'},
+    ]
+  },
+  player_health: {
+    domain:'players', apps:['T'],
+    desc:'Ghi nhận chấn thương và tình trạng sức khỏe. Athlete App private data. AI Coach đọc để tránh recommend bài tập có hại cho chấn thương đang có.',
+    notes:['status: active, recovering, resolved','pain_level 1-10','resolved_at khi chấn thương khỏi — giữ history để AI coach tránh recommend bài tập liên quan'],
+    relations:[{dir:'out',tbl:'players',desc:'player_health.player_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'player_id',t:'UUID',fk:true,note:'→ players'},
+      {n:'body_part',t:'TEXT',note:"'wrist' | 'elbow' | 'shoulder' | 'knee' | 'back' | 'ankle'"},
+      {n:'pain_level',t:'SMALLINT',note:'1-10'},
+      {n:'status',t:'injury_status',note:'active | recovering | resolved'},
+      {n:'notes',t:'TEXT',null:true,note:''},
+      {n:'resolved_at',t:'TIMESTAMPTZ',null:true,note:''},
+      {n:'deleted_at',t:'TIMESTAMPTZ',null:true,note:''},
+    ]
+  },
+  player_certificates: {
+    domain:'players', apps:['A','T'],
+    desc:'🆕 Chứng chỉ & thành tích VĐV — hoàn toàn additive, không ảnh hưởng bất kỳ table hiện có nào. Auto-issued bởi Edge Function sau trận hoặc thủ công bởi Admin/Federation.',
+    notes:[
+      'Additive 100% — thêm feature này không cần ALTER TABLE bất kỳ bảng nào',
+      'cert_type enum: champion, runner_up, third_place, participation, mvp, referee_certified, coach_certified, vpf_membership, usap_membership',
+      'auto_generated = TRUE khi Edge Function issue-certificates tạo sau match completion',
+      'verification_code UNIQUE: cho phép public verify tính xác thực của certificate',
+      'certificate_url: link PDF đã gen — có thể dùng Supabase Storage + PDF generation',
+      'expires_at NULL = không hết hạn (thành tích thi đấu), có expires_at cho membership certs',
+      'is_public: VĐV control certificate nào hiển thị trên public profile',
+    ],
+    relations:[
+      {dir:'out',tbl:'players',desc:'player_certificates.player_id'},
+      {dir:'out',tbl:'tournaments',desc:'player_certificates.tournament_id'},
+      {dir:'out',tbl:'tournament_events',desc:'player_certificates.event_id'},
+      {dir:'out',tbl:'matches',desc:'player_certificates.match_id (MVP, match awards)'},
+      {dir:'out',tbl:'orgs',desc:'player_certificates.issued_by_org_id'},
+    ],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'player_id',t:'UUID',fk:true,note:'→ players'},
+      {n:'cert_type',t:'certificate_type',note:'champion | runner_up | third_place | participation | mvp | referee_certified | coach_certified | vpf_membership | usap_membership'},
+      {n:'tournament_id',t:'UUID',fk:true,null:true,note:'→ tournaments'},
+      {n:'event_id',t:'UUID',fk:true,null:true,note:'→ tournament_events — nội dung thi đấu'},
+      {n:'match_id',t:'UUID',fk:true,null:true,note:'→ matches — cho match-level awards'},
+      {n:'issued_by_org_id',t:'UUID',fk:true,null:true,note:'→ orgs — CLB cấp'},
+      {n:'issued_by_name',t:'TEXT',note:'"CLB Pickleball HN" | "VPF" | "IPTPA"'},
+      {n:'title',t:'TEXT',note:'"Vô địch Nam Đơn Bảng A - Giải Mùa Xuân 2026"'},
+      {n:'description',t:'TEXT',null:true,note:'Mô tả bổ sung'},
+      {n:'certificate_url',t:'TEXT',null:true,note:'Link PDF — Supabase Storage'},
+      {n:'verification_code',t:'TEXT',note:'UNIQUE — verify tính xác thực online'},
+      {n:'issued_at',t:'TIMESTAMPTZ',note:''},
+      {n:'expires_at',t:'TIMESTAMPTZ',null:true,note:'NULL = không hết hạn. Có giá trị cho membership'},
+      {n:'is_public',t:'BOOLEAN',note:'VĐV control hiển thị public. Default TRUE'},
+      {n:'auto_generated',t:'BOOLEAN',note:'TRUE = do Edge Function tạo tự động'},
+      {n:'deleted_at',t:'TIMESTAMPTZ',null:true,note:''},
+    ]
+  },
+  tournaments: {
+    domain:'tournaments', apps:['A'],
+    desc:'Giải đấu — entity chính của Admin Web. Mỗi giải thuộc 1 org, có thể có nhiều tournament_events (nội dung thi đấu).',
+    notes:['is_public: hiển thị trên public page hay không','is_invite_only: chỉ VĐV được invite mới đăng ký được','duplicated_from: link về giải gốc khi dùng feature duplicate','slug là URL-friendly identifier, unique per org'],
+    relations:[{dir:'out',tbl:'orgs',desc:'tournaments.org_id'},{dir:'in',tbl:'tournament_events',desc:'tournament_events.tournament_id'},{dir:'in',tbl:'sponsors',desc:'sponsors.tournament_id'},{dir:'in',tbl:'tournament_eligibility_rules',desc:'eligibility_rules.tournament_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'org_id',t:'UUID',fk:true,note:'→ orgs'},
+      {n:'name',t:'TEXT',note:'Tên giải đấu'},
+      {n:'slug',t:'TEXT',note:'URL: "giai-mua-xuan-2026" — unique per org'},
+      {n:'status',t:'tournament_status',note:'draft → registration → check_in → in_progress → completed'},
+      {n:'registration_opens_at',t:'TIMESTAMPTZ',null:true,note:''},
+      {n:'registration_closes_at',t:'TIMESTAMPTZ',null:true,note:''},
+      {n:'starts_at',t:'TIMESTAMPTZ',note:''},
+      {n:'ends_at',t:'TIMESTAMPTZ',null:true,note:''},
+      {n:'venue_name',t:'TEXT',null:true,note:''},
+      {n:'total_courts',t:'SMALLINT',note:'Số sân thi đấu'},
+      {n:'is_public',t:'BOOLEAN',note:'Hiển thị public hay không'},
+      {n:'is_invite_only',t:'BOOLEAN',note:'Exclusive tournament'},
+      {n:'duplicated_from',t:'UUID',fk:true,null:true,note:'→ tournaments — duplicate feature'},
+      {n:'created_by',t:'UUID',fk:true,note:'→ auth.users'},
+      {n:'deleted_at',t:'TIMESTAMPTZ',null:true,note:'Soft delete'},
+    ]
+  },
+  tournament_events: {
+    domain:'tournaments', apps:['A'],
+    desc:'Nội dung thi đấu trong giải — "Nam Đơn Bảng A", "Nữ Đôi", v.v. Mỗi event có format riêng và scoring config.',
+    notes:['1 tournament có nhiều events','format per event: single_elim, double_elim, round_robin, pool_knockout','scoring config (points_to_win, win_by_two) inherit từ tournament nhưng có thể override','pool_count + advance_per_pool chỉ dùng khi format = pool_knockout'],
+    relations:[{dir:'out',tbl:'tournaments',desc:'tournament_events.tournament_id'},{dir:'in',tbl:'registrations',desc:'registrations.event_id'},{dir:'in',tbl:'matches',desc:'matches.event_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'tournament_id',t:'UUID',fk:true,note:'→ tournaments'},
+      {n:'org_id',t:'UUID',fk:true,note:'denormalized cho RLS'},
+      {n:'name',t:'TEXT',note:'"Nam Đơn Bảng A"'},
+      {n:'event_type',t:'event_type',note:'mens_singles, womens_doubles, mixed_doubles...'},
+      {n:'format',t:'tournament_format',note:'single_elimination, double_elimination, round_robin, pool_knockout'},
+      {n:'points_to_win',t:'SMALLINT',note:'11, 15, hoặc 21'},
+      {n:'win_by_two',t:'BOOLEAN',note:'Phải hơn 2 điểm'},
+      {n:'sets_to_win',t:'SMALLINT',note:'Best of N'},
+      {n:'max_participants',t:'SMALLINT',null:true,note:'Giới hạn slot'},
+      {n:'registration_fee',t:'NUMERIC(12,2)',note:'Phí đăng ký nội dung này'},
+      {n:'pool_count',t:'SMALLINT',null:true,note:'Số bảng (pool_knockout)'},
+      {n:'advance_per_pool',t:'SMALLINT',null:true,note:'Top N advance từ mỗi bảng'},
+      {n:'deleted_at',t:'TIMESTAMPTZ',null:true,note:''},
+    ]
+  },
+  tournament_eligibility_rules: {
+    domain:'tournaments', apps:['A'],
+    desc:'Điều kiện tham dự cho exclusive tournaments. Có thể áp dụng cho cả giải hoặc riêng từng event.',
+    notes:['tournament_id hoặc event_id — apply ở cấp nào tùy setting','min_rating / max_rating dùng players.estimated_rating để filter','required_org_id: chỉ member của CLB đó mới đăng ký được','custom_rule: text mô tả cho BTC xét duyệt thủ công nếu rule phức tạp'],
+    relations:[{dir:'out',tbl:'tournaments',desc:'eligibility_rules.tournament_id'},{dir:'out',tbl:'tournament_events',desc:'eligibility_rules.event_id (nullable)'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'tournament_id',t:'UUID',fk:true,null:true,note:'→ tournaments — NULL nếu chỉ apply cho 1 event'},
+      {n:'event_id',t:'UUID',fk:true,null:true,note:'→ tournament_events — NULL nếu apply cả giải'},
+      {n:'org_id',t:'UUID',fk:true,note:''},
+      {n:'min_rating',t:'NUMERIC(4,2)',null:true,note:'Rating tối thiểu'},
+      {n:'max_rating',t:'NUMERIC(4,2)',null:true,note:'Rating tối đa (beginner event)'},
+      {n:'min_age',t:'SMALLINT',null:true,note:''},
+      {n:'max_age',t:'SMALLINT',null:true,note:''},
+      {n:'required_org_id',t:'UUID',fk:true,null:true,note:'→ orgs — phải là member CLB này'},
+      {n:'custom_rule',t:'TEXT',null:true,note:'Mô tả rule phức tạp cho BTC xét tay'},
+    ]
+  },
+  sponsors: {
+    domain:'tournaments', apps:['A'],
+    desc:'Nhà tài trợ — tier system VN-adapted dựa trên thực tế MB Vietnam Cup, FPT Play, VTVcab OnSports 2025. JSONB display_config thay vì nhiều boolean riêng.',
+    notes:[
+      'Tier VN: kim_cuong (title, naming rights) / vàng / bạc / đồng / hien_vat (hiện vật) / media (kênh truyền thông)',
+      'Unique constraint: chỉ 1 kim_cuong per tournament — đảm bảo naming rights độc quyền',
+      'hien_vat: mô tả bằng in_kind_description ("50 thùng Aquafina, 20 vợt Joola")',
+      'media tier: có stream_url + coverage_type để Admin Web hiển thị link stream',
+      'display_config JSONB: show_overlay, show_scoreboard, overlay_position, overlay_size, animation — linh hoạt hơn 4 boolean riêng',
+      'logo_dark_url: logo version trên nền tối cho OBS overlay',
+      'contract_value internal — chỉ org_admin thấy, không public',
+      'Research từ: MB = kim_cuong (naming rights "MB Vietnam Cup"), FPT Play = media, CLB địa phương = đồng/hiện_vật'
+    ],
+    relations:[{dir:'out',tbl:'tournaments',desc:'sponsors.tournament_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'tournament_id',t:'UUID',fk:true,note:'→ tournaments'},
+      {n:'org_id',t:'UUID',fk:true,note:''},
+      {n:'name',t:'TEXT',note:'"MBBank", "FPT Play", "Biti\'s Hunter"'},
+      {n:'logo_url',t:'TEXT',note:'Logo chính (nền sáng)'},
+      {n:'logo_dark_url',t:'TEXT',null:true,note:'🆕 Logo nền tối — dùng cho OBS overlay'},
+      {n:'website_url',t:'TEXT',null:true,note:''},
+      {n:'tier',t:'sponsor_tier',note:'🆕 kim_cuong | vàng | bạc | đồng | hien_vat | media'},
+      {n:'sponsor_type',t:'sponsor_type',note:'🆕 cash | in_kind | media_partner | official_supplier'},
+      {n:'naming_rights',t:'BOOLEAN',note:'🆕 Tên gắn vào giải — chỉ kim_cuong. Default FALSE'},
+      {n:'in_kind_description',t:'TEXT',null:true,note:'🆕 "50 thùng Aquafina, 20 vợt Joola"'},
+      {n:'contract_value',t:'NUMERIC(15,2)',null:true,note:'🆕 VND — internal, chỉ org_admin thấy'},
+      {n:'display_config',t:'JSONB',note:'🆕 show_overlay, show_scoreboard, overlay_position, overlay_size, animation'},
+      {n:'stream_url',t:'TEXT',null:true,note:'🆕 Link livestream (media tier)'},
+      {n:'coverage_type',t:'TEXT',null:true,note:'🆕 live | highlights | recap'},
+      {n:'order_index',t:'SMALLINT',note:'Thứ tự trong cùng tier'},
+      {n:'deleted_at',t:'TIMESTAMPTZ',null:true,note:''},
+    ]
+  },
+  registrations: {
+    domain:'registrations', apps:['A','T'],
+    desc:'Đăng ký thi đấu — link player(s) vào tournament_event. Theo dõi toàn bộ vòng đời: đăng ký → payment → check-in → disqualified/substituted/transferred.',
+    notes:[
+      'Status flow: pending → approved → paid → checked_in (ngày thi đấu) | no_show',
+      '4 trạng thái mới: checked_in (xác nhận có mặt), disqualified (có audit trail), substituted (đổi partner doubles), transferred (chuyển slot)',
+      'payment_confirmed_by: admin đã confirm chuyển khoản — audit trail payment thủ công',
+      'disqualified_reason: "Vi phạm gear rule", "Code of conduct violation"',
+      'original_player2_id: lưu partner gốc khi bị thay — giữ history',
+      'seed: BTC gán sau approved đủ slot → dùng để generate bracket',
+    ],
+    relations:[{dir:'out',tbl:'tournament_events',desc:'registrations.event_id'},{dir:'out',tbl:'players',desc:'player1_id + player2_id'},{dir:'in',tbl:'matches',desc:'matches.team1/2_registration_id'},{dir:'in',tbl:'standings',desc:'standings.registration_id'},{dir:'in',tbl:'player_certificates',desc:'player_certificates.tournament_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'event_id',t:'UUID',fk:true,note:'→ tournament_events'},
+      {n:'tournament_id',t:'UUID',fk:true,note:'denormalized'},
+      {n:'org_id',t:'UUID',fk:true,note:'denormalized cho RLS'},
+      {n:'player1_id',t:'UUID',fk:true,note:'→ players — bắt buộc'},
+      {n:'player2_id',t:'UUID',fk:true,null:true,note:'→ players — NULL nếu singles'},
+      {n:'team_name',t:'TEXT',null:true,note:'Tên đôi (doubles)'},
+      {n:'status',t:'registration_status',note:'pending → approved → paid → checked_in | no_show | disqualified | substituted | transferred | withdrawn | rejected | waitlisted'},
+      {n:'seed',t:'SMALLINT',null:true,note:'Seeding cho bracket'},
+      {n:'payment_status',t:'payment_status',note:'pending | confirmed | refunded | waived'},
+      {n:'fee_amount',t:'NUMERIC(12,2)',null:true,note:''},
+      {n:'payment_confirmed_at',t:'TIMESTAMPTZ',null:true,note:''},
+      {n:'payment_confirmed_by',t:'UUID',fk:true,null:true,note:'Admin confirm chuyển khoản'},
+      {n:'checked_in_at',t:'TIMESTAMPTZ',null:true,note:'QR check-in'},
+      {n:'checked_in_by',t:'UUID',fk:true,null:true,note:''},
+      {n:'disqualified_at',t:'TIMESTAMPTZ',null:true,note:'🆕'},
+      {n:'disqualified_reason',t:'TEXT',null:true,note:'🆕 "Vi phạm gear rule"'},
+      {n:'disqualified_by',t:'UUID',fk:true,null:true,note:'🆕 Admin ra quyết định'},
+      {n:'original_player2_id',t:'UUID',fk:true,null:true,note:'🆕 Partner gốc khi bị thay (substituted)'},
+      {n:'substitute_approved_by',t:'UUID',fk:true,null:true,note:'🆕'},
+      {n:'transferred_to_player_id',t:'UUID',fk:true,null:true,note:'🆕 Người nhận slot (transferred)'},
+      {n:'notes',t:'TEXT',null:true,note:'BTC ghi chú'},
+      {n:'deleted_at',t:'TIMESTAMPTZ',null:true,note:''},
+    ]
+  },
+  courts: {
+    domain:'schedule', apps:['A'],
+    desc:'Sân thi đấu trong tournament. Dùng để detect xung đột lịch khi schedule builder xếp 2 trận cùng sân cùng giờ.',
+    notes:['Mỗi tournament tạo courts riêng — không share giữa các giải','name có thể là "Sân 1", "Court A", "Center Court"','is_active cho phép disable sân nếu có sự cố'],
+    relations:[{dir:'out',tbl:'tournaments',desc:'courts.tournament_id'},{dir:'in',tbl:'matches',desc:'matches.court_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'tournament_id',t:'UUID',fk:true,note:'→ tournaments'},
+      {n:'org_id',t:'UUID',fk:true,note:'denormalized'},
+      {n:'name',t:'TEXT',note:'"Sân 1", "Court A"'},
+      {n:'is_active',t:'BOOLEAN',note:'Disable nếu sân có sự cố'},
+      {n:'order_index',t:'SMALLINT',note:'Thứ tự hiển thị'},
+    ]
+  },
+  matches: {
+    domain:'matches', apps:['A','R'],
+    desc:'Trận đấu — entity trung tâm của toàn bộ hệ thống. Referee App ghi score vào đây qua Supabase Realtime. Admin Web đọc để advance bracket.',
+    notes:['team1/2_registration_id: NULL khi bracket chưa fill (chờ kết quả trận khác)','status flow: scheduled → in_progress → completed | walkover | postponed','winner_registration_id: được set khi completed — trigger advance-bracket Edge Function','detailed_scoring_enabled: nếu TRUE, Referee App ghi rally_events chi tiết','Supabase Realtime channel: match:{id} cho live score update','referee_user_id NULL: dùng match_code PIN — không cần account'],
+    relations:[{dir:'out',tbl:'tournament_events',desc:'matches.event_id'},{dir:'out',tbl:'registrations',desc:'team1/2_registration_id + winner_registration_id'},{dir:'out',tbl:'courts',desc:'matches.court_id'},{dir:'in',tbl:'match_sets',desc:'match_sets.match_id'},{dir:'in',tbl:'rally_events',desc:'rally_events.match_id'},{dir:'in',tbl:'match_codes',desc:'match_codes.match_id'},{dir:'in',tbl:'match_reports',desc:'1-1'},{dir:'in',tbl:'match_highlights',desc:'1-1'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'event_id',t:'UUID',fk:true,note:'→ tournament_events'},
+      {n:'tournament_id',t:'UUID',fk:true,note:'denormalized'},
+      {n:'org_id',t:'UUID',fk:true,note:'denormalized cho RLS'},
+      {n:'team1_registration_id',t:'UUID',fk:true,null:true,note:'→ registrations — NULL khi chưa biết'},
+      {n:'team2_registration_id',t:'UUID',fk:true,null:true,note:'→ registrations — NULL khi chưa biết'},
+      {n:'round',t:'SMALLINT',null:true,note:'Số vòng'},
+      {n:'round_name',t:'TEXT',null:true,note:'"Tứ kết", "Bán kết", "Chung kết"'},
+      {n:'pool_name',t:'TEXT',null:true,note:'"Bảng A" — chỉ có khi RR/pool_knockout'},
+      {n:'bracket_side',t:'bracket_side',null:true,note:'winners | losers | grand_final (DE)'},
+      {n:'court_id',t:'UUID',fk:true,null:true,note:'→ courts'},
+      {n:'scheduled_at',t:'TIMESTAMPTZ',null:true,note:'Giờ dự kiến'},
+      {n:'actual_start_at',t:'TIMESTAMPTZ',null:true,note:'Giờ thực tế bắt đầu'},
+      {n:'actual_end_at',t:'TIMESTAMPTZ',null:true,note:''},
+      {n:'status',t:'match_status',note:'scheduled → in_progress → completed | walkover | postponed'},
+      {n:'winner_registration_id',t:'UUID',fk:true,null:true,note:'→ registrations — trigger advance-bracket'},
+      {n:'team1_sets_won',t:'SMALLINT',note:'Denormalized từ match_sets'},
+      {n:'team2_sets_won',t:'SMALLINT',note:'Denormalized từ match_sets'},
+      {n:'detailed_scoring_enabled',t:'BOOLEAN',note:'Bật → Referee App ghi rally_events'},
+      {n:'referee_user_id',t:'UUID',fk:true,null:true,note:'NULL nếu dùng PIN code'},
+      {n:'referee_name',t:'TEXT',null:true,note:'Display name trọng tài'},
+      {n:'deleted_at',t:'TIMESTAMPTZ',null:true,note:''},
+    ]
+  },
+  match_codes: {
+    domain:'matches', apps:['A','R'],
+    desc:'Ephemeral PIN code 6 ký tự cho Referee App. Trọng tài nhập code → nhận JWT tạm thời với quyền ghi score cho match đó. Không cần tài khoản.',
+    notes:['Code 6 ký tự uppercase: "AX7K2P" — dễ nhập trên mobile','Expire sau 24h — Admin Web tạo mới nếu cần','is_active = FALSE sau khi dùng xong (1 code 1 lần)','JWT issued từ code này có claims: {role: referee, match_id}'],
+    relations:[{dir:'out',tbl:'matches',desc:'match_codes.match_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'match_id',t:'UUID',fk:true,note:'→ matches'},
+      {n:'org_id',t:'UUID',fk:true,note:''},
+      {n:'code',t:'TEXT',note:'6 ký tự uppercase — UNIQUE'},
+      {n:'created_by',t:'UUID',fk:true,note:'Admin đã gen code'},
+      {n:'expires_at',t:'TIMESTAMPTZ',note:'Default: NOW() + 24h'},
+      {n:'used_at',t:'TIMESTAMPTZ',null:true,note:'NULL = chưa dùng'},
+      {n:'is_active',t:'BOOLEAN',note:'FALSE sau khi dùng'},
+    ]
+  },
+  match_sets: {
+    domain:'matches', apps:['R','A'],
+    desc:'Từng set trong trận đấu. Referee App ghi score per set, Admin Web đọc để tính team1/2_sets_won trên matches.',
+    notes:['Referee App insert 1 row per set khi bắt đầu, update khi kết thúc','sync_status: pending_sync khi offline → synced khi có mạng','starting_server_side + starting_server_position: tracking serve đầu tiên theo luật Pickleball'],
+    relations:[{dir:'out',tbl:'matches',desc:'match_sets.match_id'},{dir:'in',tbl:'rally_events',desc:'rally_events.set_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'match_id',t:'UUID',fk:true,note:'→ matches'},
+      {n:'org_id',t:'UUID',fk:true,note:''},
+      {n:'set_number',t:'SMALLINT',note:'1, 2, 3...'},
+      {n:'team1_score',t:'SMALLINT',note:''},
+      {n:'team2_score',t:'SMALLINT',note:''},
+      {n:'winner_side',t:'SMALLINT',null:true,note:'1 hoặc 2 — NULL khi đang chơi'},
+      {n:'starting_server_side',t:'SMALLINT',null:true,note:'Team bắt đầu giao bóng'},
+      {n:'starting_server_position',t:'SMALLINT',null:true,note:'Server 1 hay Server 2 trong team'},
+      {n:'started_at',t:'TIMESTAMPTZ',null:true,note:''},
+      {n:'ended_at',t:'TIMESTAMPTZ',null:true,note:''},
+      {n:'sync_status',t:'sync_status',note:'pending_sync → synced | conflict'},
+      {n:'synced_at',t:'TIMESTAMPTZ',null:true,note:''},
+    ]
+  },
+  rally_events: {
+    domain:'matches', apps:['R','A','T'],
+    desc:'Chi tiết từng pha bóng — append-only log. Chỉ có data khi detailed_scoring_enabled. Là nguồn data cho AI Match Report, AI Coaching, và player stats.',
+    notes:['Không có deleted_at — immutable log, Undo chỉ set is_undone = TRUE','score_before / score_after: dạng "5-3" để trace lại timeline trận đấu','rally_reason: 14 loại từ Referee App — ace, smash, volley, drive, drop, atp, erne, lob, passing_shot, unforced_error, net_error, out, service_fault, kitchen_fault','sync_status: offline support — IndexedDB queue trong Referee App PWA','Đây là competitive moat: không platform nào ở VN collect data này'],
+    relations:[{dir:'out',tbl:'matches',desc:'rally_events.match_id'},{dir:'out',tbl:'match_sets',desc:'rally_events.set_id'},{dir:'out',tbl:'players',desc:'rally_events.responsible_player_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'match_id',t:'UUID',fk:true,note:'→ matches'},
+      {n:'set_id',t:'UUID',fk:true,note:'→ match_sets'},
+      {n:'org_id',t:'UUID',fk:true,note:''},
+      {n:'rally_number',t:'SMALLINT',note:'Thứ tự rally trong set'},
+      {n:'score_before',t:'TEXT',note:'"5-3" trước rally này'},
+      {n:'score_after',t:'TEXT',note:'"6-3" sau rally'},
+      {n:'serving_side',t:'SMALLINT',note:'1 hoặc 2 — team đang giao bóng'},
+      {n:'serving_player',t:'SMALLINT',null:true,note:'1 hoặc 2 — server trong team doubles'},
+      {n:'point_to_side',t:'SMALLINT',note:'1 hoặc 2 — ai được điểm'},
+      {n:'outcome_type',t:'rally_outcome',note:"'winner' | 'error'"},
+      {n:'rally_reason',t:'rally_reason',null:true,note:'ace | smash | kitchen_fault | ... (14 types)'},
+      {n:'responsible_player_id',t:'UUID',fk:true,null:true,note:'→ players — ai ghi điểm/mắc lỗi'},
+      {n:'is_undone',t:'BOOLEAN',note:'TRUE nếu bị undo — không xóa record'},
+      {n:'edited_at',t:'TIMESTAMPTZ',null:true,note:'Khi trọng tài edit rally'},
+      {n:'edit_reason',t:'TEXT',null:true,note:''},
+      {n:'occurred_at',t:'TIMESTAMPTZ',note:'Thời điểm thực tế của rally'},
+      {n:'sync_status',t:'sync_status',note:'pending_sync → synced | conflict'},
+    ]
+  },
+  match_incidents: {
+    domain:'matches', apps:['R','A'],
+    desc:'Sự cố trong trận — trọng tài báo BTC real-time với severity + penalty tracking. Audit trail đầy đủ cho dispute resolution và federation escalation.',
+    notes:[
+      '11 incident types: player_protest, injury, medical_timeout, equipment_issue, court_issue, code_violation, time_violation, scorekeeping_error, weather_delay, unsportsmanlike, other',
+      'severity: low / medium / high / critical — quyết định alert priority trên Admin dashboard',
+      'status: reported → under_review → resolved | escalated',
+      'penalty_type: warning → technical_warning → point_deduction → game_forfeiture → match_forfeiture → disqualification',
+      'escalated_to: "Ban trọng tài", "Vietnam Pickleball Federation" — leo thang ra ngoài BTC',
+      'reported_by là TEXT (referee name) — không cần user_id, phù hợp với ephemeral PIN flow',
+    ],
+    relations:[{dir:'out',tbl:'matches',desc:'match_incidents.match_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'match_id',t:'UUID',fk:true,note:'→ matches'},
+      {n:'org_id',t:'UUID',fk:true,note:''},
+      {n:'incident_type',t:'TEXT',note:'player_protest | injury | medical_timeout | equipment_issue | court_issue | code_violation | time_violation | scorekeeping_error | weather_delay | unsportsmanlike | other'},
+      {n:'severity',t:'incident_severity',note:'🆕 low | medium | high | critical'},
+      {n:'status',t:'incident_status',note:'🆕 reported → under_review → resolved | escalated'},
+      {n:'description',t:'TEXT',note:'Mô tả chi tiết sự cố'},
+      {n:'penalty_issued',t:'BOOLEAN',note:'🆕 Có cấp penalty không'},
+      {n:'penalty_type',t:'TEXT',null:true,note:'🆕 warning | technical_warning | point_deduction | game_forfeiture | match_forfeiture | disqualification'},
+      {n:'penalty_note',t:'TEXT',null:true,note:'🆕 BTC ghi chú về penalty'},
+      {n:'reported_by',t:'TEXT',note:'Tên trọng tài — không cần user_id'},
+      {n:'resolved_by',t:'UUID',fk:true,null:true,note:'🆕 Admin đã resolve'},
+      {n:'reported_at',t:'TIMESTAMPTZ',note:''},
+      {n:'resolved_at',t:'TIMESTAMPTZ',null:true,note:''},
+      {n:'resolution',t:'TEXT',null:true,note:'BTC mô tả cách xử lý'},
+      {n:'escalated_to',t:'TEXT',null:true,note:'🆕 "Ban trọng tài", "VPF"'},
+      {n:'escalated_at',t:'TIMESTAMPTZ',null:true,note:'🆕'},
+    ]
+  },
+  bracket_slots: {
+    domain:'bracket', apps:['A'],
+    desc:'Vị trí trong bracket tree — mỗi slot là 1 ô. Khi 2 slot của 1 cặp đều có registration_id, Edge Function tạo match tương ứng.',
+    notes:['filled_by: seed (từ seeding ban đầu), winner_of, loser_of (DE bracket)','source_match_id: trận nguồn nếu slot fill từ kết quả trận khác','is_bye: slot này không có đối thủ — VĐV tự advance','DE bracket cần cả winners và losers bracket_side'],
+    relations:[{dir:'out',tbl:'tournament_events',desc:'bracket_slots.event_id'},{dir:'out',tbl:'registrations',desc:'bracket_slots.registration_id'},{dir:'out',tbl:'matches',desc:'bracket_slots.match_id + source_match_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'event_id',t:'UUID',fk:true,note:'→ tournament_events'},
+      {n:'org_id',t:'UUID',fk:true,note:''},
+      {n:'round',t:'SMALLINT',note:'Vòng đấu'},
+      {n:'position',t:'SMALLINT',note:'Vị trí trong round'},
+      {n:'bracket_side',t:'bracket_side',note:'winners | losers | grand_final'},
+      {n:'registration_id',t:'UUID',fk:true,null:true,note:'→ registrations — NULL khi chưa biết'},
+      {n:'is_bye',t:'BOOLEAN',note:'Bye slot — tự advance'},
+      {n:'filled_by',t:'TEXT',note:"'seed' | 'winner_of' | 'loser_of'"},
+      {n:'source_match_id',t:'UUID',fk:true,null:true,note:'→ matches — trận nguồn'},
+      {n:'match_id',t:'UUID',fk:true,null:true,note:'→ matches — trận được chơi ở slot này'},
+    ]
+  },
+  standings: {
+    domain:'bracket', apps:['A'],
+    desc:'Bảng xếp hạng Round Robin — cập nhật sau mỗi trận RR hoàn thành bởi Edge Function update-standings.',
+    notes:['Chỉ có data khi format = round_robin hoặc pool_knockout (phase 1)','points: 2 per win, 0 per loss (standard RR)','tiebreaker order: points → set_ratio → point_ratio','qualified = TRUE khi advance từ pool lên knockout phase'],
+    relations:[{dir:'out',tbl:'tournament_events',desc:'standings.event_id'},{dir:'out',tbl:'registrations',desc:'standings.registration_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'event_id',t:'UUID',fk:true,note:'→ tournament_events'},
+      {n:'org_id',t:'UUID',fk:true,note:''},
+      {n:'pool_name',t:'TEXT',null:true,note:'"Bảng A" — NULL nếu không có pool'},
+      {n:'registration_id',t:'UUID',fk:true,note:'→ registrations'},
+      {n:'played / wins / losses',t:'SMALLINT',note:'Stats cơ bản'},
+      {n:'sets_won / sets_lost',t:'SMALLINT',note:''},
+      {n:'points_won / points_lost',t:'SMALLINT',note:''},
+      {n:'points',t:'SMALLINT',note:'2 per win'},
+      {n:'set_ratio / point_ratio',t:'NUMERIC(5,3)',note:'Tiebreaker'},
+      {n:'position',t:'SMALLINT',null:true,note:'Xếp hạng trong bảng'},
+      {n:'qualified',t:'BOOLEAN',note:'Advance lên knockout phase'},
+    ]
+  },
+  paddles: {
+    domain:'equipment', apps:['A','T'],
+    desc:'Database vợt Pickleball — approved/banned list từ USA Pickleball. Admin Web search để validate gear, Athlete App link player_gear vào đây.',
+    notes:['usap_approved: USA Pickleball official approved list','vpf_approved: Vietnam Pickleball Federation (khi có API)','ban_date + banned_reason: audit trail khi vợt bị remove','full-text search trên brand + model để tìm nhanh','source_url link về official list để verify'],
+    relations:[{dir:'in',tbl:'player_gear',desc:'player_gear.paddle_id'},{dir:'in',tbl:'match_gear_checks',desc:'match_gear_checks.paddle_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'brand',t:'TEXT',note:'"Joola", "Selkirk", "Head"'},
+      {n:'model',t:'TEXT',note:'"Ben Johns Perseus 3"'},
+      {n:'year',t:'SMALLINT',null:true,note:''},
+      {n:'weight_min/max_oz',t:'NUMERIC(4,1)',null:true,note:''},
+      {n:'surface_texture',t:'TEXT',null:true,note:"'smooth' | 'rough' | 'carbon'"},
+      {n:'status',t:'paddle_status',note:'approved | banned | under_review | delisted'},
+      {n:'usap_approved',t:'BOOLEAN',note:'USA Pickleball approved'},
+      {n:'vpf_approved',t:'BOOLEAN',note:'Vietnam Pickleball Federation'},
+      {n:'banned_reason',t:'TEXT',null:true,note:'Lý do bị ban'},
+      {n:'ban_date',t:'DATE',null:true,note:''},
+      {n:'last_verified',t:'DATE',null:true,note:'Ngày kiểm tra gần nhất'},
+    ]
+  },
+  match_gear_checks: {
+    domain:'equipment', apps:['R','A'],
+    desc:'Pre-match equipment verification — trọng tài confirm gear của từng VĐV trước khi trận bắt đầu. Audit trail cho gear protest.',
+    notes:['UNIQUE (match_id, player_id): mỗi VĐV chỉ check 1 lần per match','result: passed | failed | not_checked','fail_reason: ghi lý do fail nếu gear không hợp lệ','checked_by là TEXT (referee name) không cần user_id'],
+    relations:[{dir:'out',tbl:'matches',desc:'match_gear_checks.match_id'},{dir:'out',tbl:'players',desc:'match_gear_checks.player_id'},{dir:'out',tbl:'paddles',desc:'match_gear_checks.paddle_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'match_id',t:'UUID',fk:true,note:'→ matches'},
+      {n:'org_id',t:'UUID',fk:true,note:''},
+      {n:'player_id',t:'UUID',fk:true,note:'→ players'},
+      {n:'paddle_id',t:'UUID',fk:true,null:true,note:'→ paddles — NULL nếu model chưa có trong DB'},
+      {n:'paddle_brand / model',t:'TEXT',note:'Nhập tay nếu không có trong DB'},
+      {n:'paddle_weight',t:'NUMERIC(4,1)',null:true,note:'oz'},
+      {n:'result',t:'gear_check_result',note:'passed | failed | not_checked'},
+      {n:'fail_reason',t:'TEXT',null:true,note:''},
+      {n:'checked_by',t:'TEXT',note:'Tên trọng tài'},
+      {n:'checked_at',t:'TIMESTAMPTZ',note:''},
+    ]
+  },
+  match_reports: {
+    domain:'ai', apps:['A'],
+    desc:'AI-generated match report bằng Gemini. Sau khi trận hoàn thành, Edge Function generate-match-report tạo bài tường thuật tiếng Việt từ rally log.',
+    notes:['Trigger: matches.status = completed → Edge Function chạy tự động','report_vi: bài tường thuật tiếng Việt — dùng thẳng hoặc edit nhẹ để post','key_stats JSONB: longest_rally, aces, match_duration, comeback moments','BTC có thể edit trước khi publish (edited_by + edited_at)','is_published: cho phép BTC review trước khi public'],
+    relations:[{dir:'out',tbl:'matches',desc:'1-1, match_reports.match_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'match_id',t:'UUID',fk:true,note:'→ matches — UNIQUE'},
+      {n:'org_id',t:'UUID',fk:true,note:''},
+      {n:'report_vi',t:'TEXT',null:true,note:'Bài tường thuật tiếng Việt'},
+      {n:'report_en',t:'TEXT',null:true,note:'English (optional)'},
+      {n:'key_stats',t:'JSONB',note:'longest_rally, aces, comeback_from, match_duration_mins...'},
+      {n:'model_used',t:'TEXT',note:"'gemini-2.5-flash'"},
+      {n:'generated_at',t:'TIMESTAMPTZ',note:''},
+      {n:'edited_by',t:'UUID',fk:true,null:true,note:'BTC edit trước publish'},
+      {n:'is_published',t:'BOOLEAN',note:'FALSE = chờ BTC review'},
+    ]
+  },
+  match_highlights: {
+    domain:'ai', apps:['A'],
+    desc:'AI-generated highlight cue list — timecodes của các moment quan trọng trong trận. Dùng để cắt clip TikTok/Reel nhanh.',
+    notes:['cues là JSONB array: [{rally_number, timestamp_offset_sec, reason, description, priority}]','timestamp_offset_sec tính từ actual_start_at — cộng với stream_start_at để có absolute timestamp','priority 1 = must include, 2 = nice to have','stream_start_at: khi biết BTC bắt đầu livestream lúc nào'],
+    relations:[{dir:'out',tbl:'matches',desc:'1-1, match_highlights.match_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'match_id',t:'UUID',fk:true,note:'→ matches — UNIQUE'},
+      {n:'org_id',t:'UUID',fk:true,note:''},
+      {n:'cues',t:'JSONB',note:'Array of highlight moments với timecodes'},
+      {n:'stream_start_at',t:'TIMESTAMPTZ',null:true,note:'Khi livestream bắt đầu — tính absolute timestamp'},
+      {n:'generated_at',t:'TIMESTAMPTZ',note:''},
+    ]
+  },
+  notifications: {
+    domain:'notifications', apps:['A','T'],
+    desc:'Log thông báo đã gửi — Zalo OA, email, push. Dùng để track delivery và retry nếu fail.',
+    notes:['player_id NULL nếu là broadcast cho tất cả VĐV của tournament','channel: zalo_oa (v1.5), email (v1), push (v2 - Athlete native app)','type: match_reminder, match_result, schedule_change, checkin_reminder','error: ghi lý do fail để retry'],
+    relations:[{dir:'out',tbl:'players',desc:'notifications.player_id'},{dir:'out',tbl:'tournaments',desc:'notifications.tournament_id'},{dir:'out',tbl:'matches',desc:'notifications.match_id'}],
+    cols:[
+      {n:'id',t:'UUID',pk:true,note:''},
+      {n:'org_id',t:'UUID',fk:true,null:true,note:''},
+      {n:'player_id',t:'UUID',fk:true,null:true,note:'→ players — NULL nếu broadcast'},
+      {n:'tournament_id',t:'UUID',fk:true,null:true,note:'→ tournaments'},
+      {n:'match_id',t:'UUID',fk:true,null:true,note:'→ matches'},
+      {n:'channel',t:'TEXT',note:"'zalo_oa' | 'email' | 'push'"},
+      {n:'type',t:'TEXT',note:"'match_reminder' | 'match_result' | 'schedule_change'"},
+      {n:'title',t:'TEXT',null:true,note:''},
+      {n:'body',t:'TEXT',note:'Nội dung thông báo'},
+      {n:'sent_at',t:'TIMESTAMPTZ',null:true,note:''},
+      {n:'delivered_at',t:'TIMESTAMPTZ',null:true,note:''},
+      {n:'error',t:'TEXT',null:true,note:'Lý do fail nếu có'},
+    ]
+  },
+};
+
+const EDGE_FUNCTIONS = [
+  {name:'calculate-rating',trigger:'matches.status → completed',desc:'Tính DUPR estimate mới từ tournament match results (Elo-based). Cập nhật players.estimated_rating + insert player_ratings history.'},
+  {name:'advance-bracket',trigger:'matches.status → completed',desc:'Đọc winner_registration_id → cập nhật bracket_slots tương ứng → tạo match tiếp theo nếu cả 2 slot đều đã có player. Xử lý cả winners và losers bracket (DE).'},
+  {name:'update-standings',trigger:'matches.status → completed (RR only)',desc:'Recalculate standings table cho event. Xử lý tiebreaker: points → set_ratio → point_ratio. Set qualified = TRUE cho top N per pool.'},
+  {name:'generate-match-report',trigger:'matches.status → completed',desc:'Query rally_events + match_sets → build Gemini prompt → generate bài tường thuật tiếng Việt → insert match_reports.'},
+  {name:'generate-highlights',trigger:'matches.status → completed',desc:'Phân tích rally_events tìm moments quan trọng (match_point, long_rally, comeback, ace_streak) → sinh timecode list → insert match_highlights.'},
+  {name:'generate-match-code',trigger:'Admin Web: tạo code cho referee',desc:'Gen code 6 ký tự random uppercase → check UNIQUE → insert match_codes → return code cho Admin Web hiển thị.'},
+  {name:'claim-player-profile',trigger:'Athlete App: claim profile',desc:'Verify claim_token + expires_at → link players.user_id với auth.uid() → set is_claimed = TRUE → delete claim_token.'},
+  {name:'issue-certificates',trigger:'Sau matches.status → completed',desc:'Auto-insert player_certificates cho winner/runner-up/mvp, gen PDF qua Supabase Storage, set verification_code unique.'},
+];
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let currentFilter = 'all';
+let currentTable = null;
+const appColors = {A:'var(--blu)',R:'var(--red)',T:'var(--grn)'};
+const appNames = {A:'Admin Web',R:'Referee App',T:'Athlete App'};
+
+// ═══════════════════════════════════════════
+// RENDER SIDEBAR
+// ═══════════════════════════════════════════
+function renderSidebar(){
+  const sb = document.getElementById('sidebar');
+  sb.innerHTML = '';
+  DOMAINS.forEach(domain => {
+    const tables = Object.entries(TABLES).filter(([,t]) => t.domain === domain.id);
+    if(!tables.length) return;
+    const lbl = document.createElement('div');
+    lbl.className = 'domain-label';
+    lbl.textContent = domain.label;
+    sb.appendChild(lbl);
+    tables.forEach(([key, tbl]) => {
+      const btn = document.createElement('button');
+      btn.className = 'tbl-btn' + (key === currentTable ? ' active' : '');
+      btn.id = 'btn-' + key;
+      const dimmed = currentFilter !== 'all' && !matchesFilter(tbl, currentFilter);
+      if(dimmed) btn.classList.add('dimmed');
+      btn.innerHTML = `
+        <span class="tbl-dot" style="background:${domain.color}"></span>
+        <span class="tbl-name">${key}</span>
+        <span class="tbl-apps">${tbl.apps.map(a=>`<span class="app-pip" style="background:${appColors[a]}" title="${appNames[a]}"></span>`).join('')}</span>
+        <span class="tbl-count">${tbl.cols.length}</span>
+      `;
+      btn.onclick = () => showTable(key);
+      sb.appendChild(btn);
+    });
+  });
+}
+
+function matchesFilter(tbl, filter){
+  if(filter === 'all') return true;
+  if(filter === 'admin') return tbl.apps.includes('A');
+  if(filter === 'referee') return tbl.apps.includes('R');
+  if(filter === 'athlete') return tbl.apps.includes('T');
+  if(filter === 'shared') return tbl.apps.length > 1;
+  return true;
+}
+
+// ═══════════════════════════════════════════
+// RENDER OVERVIEW
+// ═══════════════════════════════════════════
+function renderOverview(){
+  const panel = document.getElementById('overview-panel');
+  let html = '<div style="margin-bottom:16px"><div style="font-size:18px;font-weight:600;margin-bottom:4px">Database Schema Overview</div><div style="font-size:13px;color:var(--tx2)">Chọn table bên trái hoặc nhấn vào nhóm để xem chi tiết. Filter theo app ở trên.</div></div>';
+  html += '<div class="overview">';
+  DOMAINS.forEach(domain => {
+    const tables = Object.entries(TABLES).filter(([,t]) => t.domain === domain.id);
+    if(!tables.length) return;
+    const dimmed = currentFilter !== 'all' && !tables.some(([,t]) => matchesFilter(t, currentFilter));
+    html += `<div class="ov-card${dimmed?' dimmed':''}" onclick="showDomain('${domain.id}')">
+      <div class="ov-domain" style="color:${domain.color}">${domain.label}</div>
+      <div class="ov-tables">${tables.map(([k])=>`<span class="ov-tbl">${k}</span>`).join('')}</div>
+    </div>`;
+  });
+  html += '</div>';
+  // Edge Functions
+  html += `<div style="margin-top:8px"><div style="font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--tx2);margin-bottom:10px">Edge Functions (8)</div>`;
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">';
+  EDGE_FUNCTIONS.forEach(ef => {
+    html += `<div class="ef-item"><div class="ef-name">${ef.name}</div><div class="ef-desc" style="font-size:11px">${ef.desc.substring(0,80)}...</div></div>`;
+  });
+  html += '</div></div>';
+  // Realtime channels
+  html += `<div style="margin-top:16px"><div style="font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--tx2);margin-bottom:8px">Supabase Realtime Channels (3)</div>
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div class="ef-item"><span class="ef-name" style="display:inline">match:{match_id}</span> <span style="font-size:11px;color:var(--tx2)"> — match_sets + rally_events → Referee App (write), Admin live score (read), OBS overlay (read)</span></div>
+    <div class="ef-item"><span class="ef-name" style="display:inline">tournament:{tournament_id}</span> <span style="font-size:11px;color:var(--tx2)"> — matches status + standings → Admin bracket view, Public scoreboard</span></div>
+    <div class="ef-item"><span class="ef-name" style="display:inline">org:{org_id}:operations</span> <span style="font-size:11px;color:var(--tx2)"> — registrations + matches → Admin dashboard overview</span></div>
+  </div></div>`;
+
+  // Scalability & future features
+  html += `<div style="margin-top:24px;border-top:0.5px solid var(--bd);padding-top:20px">
+    <div style="font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--tx2);margin-bottom:12px">Scalability & Future Features</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px">
+      <div class="ef-item">
+        <div style="font-size:11px;font-weight:600;color:var(--gtx);margin-bottom:6px">✓ Additive — zero disruption</div>
+        <div style="font-size:11px;color:var(--tx2);line-height:1.6">
+          Certificates ✅ đã có · VNPay/MoMo billing · League/series · Achievements/badges · Coach profiles · API keys cho CLB · Multi-language content
+        </div>
+      </div>
+      <div class="ef-item">
+        <div style="font-size:11px;font-weight:600;color:var(--atx);margin-bottom:6px">~ Migration nhỏ, non-breaking</div>
+        <div style="font-size:11px;color:var(--tx2);line-height:1.6">
+          Team competitions · VPF rating sync (thêm vpf_player_id) · Mobile notifications · Payment transactions table
+        </div>
+      </div>
+      <div class="ef-item">
+        <div style="font-size:11px;font-weight:600;color:var(--rtx);margin-bottom:6px">⚠ Plan trước khi làm</div>
+        <div style="font-size:11px;color:var(--tx2);line-height:1.6">
+          Multi-region deploy (Supabase read replicas) · Event sourcing đầy đủ · Self-hosted PostgreSQL migration
+        </div>
+      </div>
+      <div class="ef-item">
+        <div style="font-size:11px;font-weight:600;color:var(--ptx);margin-bottom:6px">∞ Scale bottleneck timeline</div>
+        <div style="font-size:11px;color:var(--tx2);line-height:1.6">
+          rally_events: cần partitioning ở ~50M rows (≈3–4 năm) · notifications: archive sau 90 ngày · Tất cả khác: fine cho 5+ năm
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  panel.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════
+// RENDER TABLE DETAIL
+// ═══════════════════════════════════════════
+function showTable(key){
+  currentTable = key;
+  const tbl = TABLES[key];
+  const domain = DOMAINS.find(d => d.id === tbl.domain);
+  document.getElementById('overview-panel').style.display = 'none';
+  const panel = document.getElementById('detail-panel');
+  panel.style.display = 'block';
+
+  // App access badges
+  const appBadges = tbl.apps.map(a =>
+    `<span class="app-badge" style="background:${appColors[a]}22;color:${appColors[a]};border:0.5px solid ${appColors[a]}44">${appNames[a]}</span>`
+  ).join('');
+
+  // Columns table
+  let colsHtml = `<table class="col-table"><thead><tr>
+    <th>Column</th><th>Type</th><th>Notes</th>
+  </tr></thead><tbody>`;
+  tbl.cols.forEach(col => {
+    colsHtml += `<tr>
+      <td><span class="col-name ${col.pk?'col-pk':col.fk?'col-fk':''}">${col.n}</span>${col.pk?'<span class="badge-pk">PK</span>':''}${col.fk?'<span class="badge-fk">FK</span>':''}${col.null?'<span class="badge-null">nullable</span>':''}</td>
+      <td><span class="col-type">${col.t}</span></td>
+      <td><span class="col-note">${col.note}</span></td>
+    </tr>`;
+  });
+  colsHtml += '</tbody></table>';
+
+  // Relations
+  let relHtml = '';
+  if(tbl.relations && tbl.relations.length){
+    relHtml = `<div class="rel-section"><div class="rel-title">Quan hệ với tables khác</div><div class="rel-list">`;
+    tbl.relations.forEach(r => {
+      const other = TABLES[r.tbl];
+      const color = other ? DOMAINS.find(d=>d.id===other.domain)?.color : '#888';
+      relHtml += `<div class="rel-item" onclick="${other?`showTable('${r.tbl}')`:''}">
+        <span style="font-size:11px;color:var(--tx3)">${r.dir==='out'?'→':'←'}</span>
+        <span class="rel-tbl" style="color:${color}">${r.tbl}</span>
+        <span class="rel-desc">${r.desc}</span>
+      </div>`;
+    });
+    relHtml += '</div></div>';
+  }
+
+  // Design notes
+  let notesHtml = '';
+  if(tbl.notes && tbl.notes.length){
+    notesHtml = `<div class="notes-section"><div class="notes-title">Thiết kế & lý do</div>`;
+    tbl.notes.forEach(n => {
+      notesHtml += `<div class="note-item"><span class="note-icon">→</span><span>${n}</span></div>`;
+    });
+    notesHtml += '</div>';
+  }
+
+  panel.innerHTML = `
+    <button class="back-btn" onclick="showOverview()">← Tất cả tables</button>
+    <div class="tbl-header">
+      <div class="tbl-title">
+        <span style="width:12px;height:12px;border-radius:50%;background:${domain.color};display:inline-block;flex-shrink:0"></span>
+        ${key}
+        <span style="font-size:13px;color:var(--tx3);font-weight:400">${tbl.cols.length} columns</span>
+      </div>
+      <div class="tbl-desc">${tbl.desc}</div>
+      <div class="app-access">${appBadges}</div>
+    </div>
+    ${notesHtml}
+    <div class="cols-title">Columns</div>
+    ${colsHtml}
+    ${relHtml}
+  `;
+
+  // Update sidebar active
+  document.querySelectorAll('.tbl-btn').forEach(b => b.classList.remove('active'));
+  const activeBtn = document.getElementById('btn-' + key);
+  if(activeBtn) activeBtn.classList.add('active');
+}
+
+function showOverview(){
+  currentTable = null;
+  document.getElementById('overview-panel').style.display = 'block';
+  document.getElementById('detail-panel').style.display = 'none';
+  document.querySelectorAll('.tbl-btn').forEach(b => b.classList.remove('active'));
+}
+
+function showDomain(domainId){
+  const first = Object.entries(TABLES).find(([,t]) => t.domain === domainId);
+  if(first) showTable(first[0]);
+}
+
+function setFilter(f, btn){
+  currentFilter = f;
+  document.querySelectorAll('.ftag').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderSidebar();
+  renderOverview();
+  if(currentTable){
+    const tbl = TABLES[currentTable];
+    if(!matchesFilter(tbl, f)){
+      showOverview();
+    }
+  }
+}
+
+// INIT
+renderSidebar();
+renderOverview();
+</script>
+</body>
+</html>

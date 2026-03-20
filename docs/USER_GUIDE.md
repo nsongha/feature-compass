@@ -158,3 +158,29 @@ Click **All Project Context →** to see the full unfiltered context.
 3. **Write detailed descriptions** — "Add dark mode" gives poor results. "Add system-aware dark mode toggle with user preference persistence for our React dashboard" is much better
 4. **Re-evaluate after context changes** — If you update project docs, re-evaluate existing ideas for updated analysis
 5. **Use Notes liberally** — AI doesn't know about budget constraints, team politics, or strategic pivots
+
+---
+
+## Doc Generator (Standalone Tool)
+
+Open `doc-generator.html` separately — a standalone AI-guided tool to create a full set of project documentation.
+
+### Flow
+
+1. **Setup** — Enter API key, choose model, describe your project
+2. **Docs Plan** — AI analyzes and recommends which docs to create (PRD, Tech Stack, Schema, etc.)
+3. **Builder** — Answer guided questions for each doc; AI generates professional markdown
+4. **Cross-Check** — AI reviews all docs for consistency, orphan references, missing info
+5. **Export** — Download individual or all docs as `.md` files
+
+### Supported Doc Types
+
+| Doc | Description |
+|-----|-------------|
+| DECISIONS.md | Tech & architecture decisions |
+| PRD.md | Product requirements, user stories |
+| TECH_STACK.md | Technology choices & rationale |
+| DATA_SCHEMA.md | Database schema design |
+| API_CONTRACT.md | API endpoint specifications |
+| AUTH_FLOW.md | Authentication flow |
+| DEPLOYMENT.md | Deploy strategy |

@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pickleball OS — Ecosystem & Tech Decisions</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f6f2;--sur:#fff;--sur2:#f0efe9;--sur3:#e8e7e1;
+  --bd:rgba(0,0,0,0.09);--bdm:rgba(0,0,0,0.17);--bds:rgba(0,0,0,0.28);
+  --tx:#181816;--tx2:#6a6960;--tx3:#9c9a90;
+  --red:#E24B4A;--rbg:#FCEBEB;--rtx:#A32D2D;
+  --amb:#EF9F27;--abg:#FAEEDA;--atx:#854F0B;
+  --pur:#7F77DD;--pbg:#EEEDFE;--ptx:#534AB7;
+  --grn:#1D9E75;--gbg:#EAF3DE;--gtx:#3B6D11;
+  --blu:#185fa5;--bbg:#E6F1FB;--btx:#185fa5;
+  --r:9px;--rl:13px;
+  --fn:system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#131311;--sur:#1d1d1a;--sur2:#242420;--sur3:#2c2c28;
+  --bd:rgba(255,255,255,0.07);--bdm:rgba(255,255,255,0.14);--bds:rgba(255,255,255,0.24);
+  --tx:#e6e4dc;--tx2:#98968e;--tx3:#5a5954;
+  --rbg:#501313;--rtx:#F09595;--abg:#412402;--atx:#FAC775;
+  --pbg:#26215C;--ptx:#AFA9EC;--gbg:#173404;--gtx:#97C459;
+  --bbg:#042C53;--btx:#85B7EB;
+}}
+body{background:var(--bg);color:var(--tx);font-family:var(--fn);min-height:100vh}
+
+/* ── HEADER ── */
+.hdr{background:var(--sur);border-bottom:0.5px solid var(--bd);padding:16px 24px;position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.hdr-l h1{font-size:14px;font-weight:600;letter-spacing:-.01em}
+.hdr-l p{font-size:11px;color:var(--tx2);margin-top:2px}
+.hdr-r{display:flex;align-items:center;gap:10px}
+.pbar{width:120px;height:3px;background:var(--bd);border-radius:2px;overflow:hidden}
+.pfill{height:100%;background:var(--grn);border-radius:2px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+.plbl{font-size:11px;color:var(--tx2);white-space:nowrap}
+.xbtn{padding:6px 14px;background:var(--tx);color:var(--bg);border:none;border-radius:var(--r);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--fn);transition:opacity .15s;white-space:nowrap}
+.xbtn:hover{opacity:.82}.xbtn:disabled{opacity:.28;cursor:not-allowed}
+
+/* ── LAYOUT ── */
+.wrap{max-width:820px;margin:0 auto;padding:24px 18px 80px}
+
+/* ── CONTEXT BANNER ── */
+.ctx{background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--rl);padding:16px 18px;margin-bottom:24px}
+.ctx-title{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--tx2);margin-bottom:12px}
+.app-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.app-card{background:var(--sur2);border-radius:var(--r);padding:11px 13px}
+.app-name{font-size:12px;font-weight:600;color:var(--tx);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.app-dot{width:7px;height:7px;border-radius:50%}
+.app-feat{font-size:11px;color:var(--tx2);line-height:1.55}
+.app-feat span{display:block;padding:1px 0}
+.app-feat .tag{display:inline-block;background:var(--rbg);color:var(--rtx);font-size:10px;padding:1px 5px;border-radius:4px;margin-top:3px}
+.app-feat .tag-ok{background:var(--gbg);color:var(--gtx)}
+
+/* ── SPINE ── */
+.spine{background:var(--sur2);border:0.5px solid var(--bd);border-radius:var(--rl);padding:14px 16px;margin-bottom:24px}
+.spine-title{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--tx2);margin-bottom:10px}
+.spine-flow{display:flex;align-items:center;gap:0;flex-wrap:wrap;row-gap:6px}
+.snode{background:var(--sur);border:0.5px solid var(--bdm);border-radius:var(--r);padding:8px 12px;font-size:12px}
+.snode strong{display:block;font-size:11px;color:var(--tx2);font-weight:400;margin-bottom:1px}
+.sarr{color:var(--tx3);font-size:12px;padding:0 6px;flex-shrink:0}
+.spine-note{font-size:11px;color:var(--tx3);margin-top:8px;line-height:1.5}
+.spine-note b{color:var(--tx2);font-weight:500}
+
+/* ── PHASE ── */
+.phase{margin-bottom:32px}
+.phase-hd{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.pdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ptitle{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--tx2)}
+.pcount{font-size:11px;color:var(--tx3)}
+
+/* ── DECISION CARD ── */
+.dc{background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--rl);margin-bottom:8px;overflow:hidden;transition:border-color .2s}
+.dc.answered{border-color:var(--bdm)}
+.dc-hd{padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;cursor:pointer;user-select:none;-webkit-user-select:none}
+.dc-hd:hover{background:var(--sur2)}
+.dq{font-size:13px;font-weight:500;line-height:1.4;flex:1}
+.dmeta{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.badge{font-size:10px;padding:2px 7px;border-radius:5px;white-space:nowrap;font-weight:500}
+.chev{font-size:10px;color:var(--tx3);transition:transform .2s;flex-shrink:0}
+.dc.open .chev{transform:rotate(180deg)}
+.sp{font-size:11px;color:var(--grn);font-weight:500;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── OPTIONS ── */
+.opts{display:none;padding:0 16px;flex-direction:column;gap:5px}
+.dc.open .opts{display:flex}
+.opt{border:0.5px solid var(--bd);border-radius:var(--r);padding:10px 12px;cursor:pointer;transition:all .15s;display:flex;align-items:flex-start;gap:8px}
+.opt:hover{border-color:var(--bdm);background:var(--sur2)}
+.opt.sel{border-color:var(--grn);background:var(--gbg)}
+.ora{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--bdm);flex-shrink:0;margin-top:2px;transition:all .15s;display:flex;align-items:center;justify-content:center}
+.opt.sel .ora{border-color:var(--grn);background:var(--grn)}
+.ord{width:5px;height:5px;border-radius:50%;background:#fff;display:none}
+.opt.sel .ord{display:block}
+.otx{flex:1}
+.olbl{font-size:12px;color:var(--tx);line-height:1.4;font-weight:500}
+.odsc{font-size:11px;color:var(--tx2);margin-top:2px;line-height:1.45}
+.otag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;margin-top:3px}
+
+/* ── CONNECTION CALLOUT ── */
+.conn{background:var(--sur2);border:0.5px solid var(--bd);border-left:2px solid var(--pur);border-radius:0 var(--r) var(--r) 0;padding:8px 11px;margin-top:4px;font-size:11px;color:var(--tx2);line-height:1.5}
+.conn strong{color:var(--ptx);font-weight:500}
+
+/* ── IMPACT ── */
+.imp{font-size:11px;color:var(--tx3);padding:7px 10px;background:var(--sur2);border-radius:7px;margin-top:4px;line-height:1.4}
+.imp b{color:var(--tx2)}
+
+/* ── COMMENT ── */
+.cmt{margin:8px 0 14px;padding-top:8px;border-top:0.5px solid var(--bd)}
+.cmt-lbl{font-size:10px;color:var(--tx3);margin-bottom:4px}
+.cmt-in{width:100%;padding:7px 10px;border:0.5px solid var(--bdm);border-radius:var(--r);background:var(--sur2);color:var(--tx);font-size:11px;font-family:var(--fn);outline:none;resize:none;height:48px;line-height:1.5;transition:border-color .15s,height .2s}
+.cmt-in:focus{border-color:var(--grn);background:var(--sur);height:72px}
+.cmt-in::placeholder{color:var(--tx3)}
+
+/* ── DONE BANNER ── */
+.done{background:var(--gbg);border:0.5px solid var(--grn);border-radius:var(--rl);padding:16px 20px;text-align:center;margin-bottom:24px;display:none}
+.done.show{display:block}
+.done h2{font-size:14px;font-weight:600;color:var(--gtx)}
+.done p{font-size:12px;color:var(--gtx);opacity:.8;margin-top:3px}
+
+/* ── EXPORT PANEL ── */
+.expanel{background:var(--sur);border:0.5px solid var(--bd);border-radius:var(--rl);padding:18px 20px;margin-top:20px;display:none}
+.expanel.show{display:block}
+.expanel-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.expanel-hd h3{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--tx2)}
+.exp-acts{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.ebtn{padding:7px 14px;border-radius:var(--r);font-size:12px;font-weight:500;cursor:pointer;border:0.5px solid var(--bdm);background:transparent;color:var(--tx);font-family:var(--fn);transition:all .15s}
+.ebtn:hover{background:var(--sur2)}
+.ebtn-p{background:var(--tx);color:var(--bg);border-color:transparent}
+.ebtn-p:hover{opacity:.85;background:var(--tx)}
+.copy-ok{font-size:11px;color:var(--grn);display:none}
+.copy-ok.show{display:inline}
+pre.mdpre{font-size:11px;line-height:1.7;color:var(--tx);font-family:'SF Mono','Fira Code','Consolas',monospace;white-space:pre-wrap;word-break:break-word;max-height:320px;overflow-y:auto;background:var(--sur2);padding:14px;border-radius:var(--r)}
+
+/* ── HIDDEN TEXTAREA FOR COPY ── */
+#copyta{position:absolute;left:-9999px;top:0;opacity:0;height:1px}
+
+@media(max-width:560px){
+  .app-row{grid-template-columns:1fr}
+  .spine-flow{flex-direction:column;align-items:flex-start}
+  .sarr{transform:rotate(90deg)}
+  .hdr{padding:12px 14px}
+  .wrap{padding:16px 12px 60px}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-l">
+    <h1>Pickleball OS — Ecosystem &amp; Tech Stack Decisions</h1>
+    <p>Chốt <span id="cnt">0</span>/12 quyết định → export DECISIONS_ECOSYSTEM.md</p>
+  </div>
+  <div class="hdr-r">
+    <div class="pbar"><div class="pfill" id="pfill" style="width:0%"></div></div>
+    <span class="plbl" id="plbl">0 / 12</span>
+    <button class="xbtn" id="xbtn" disabled onclick="showExport()">Export .md</button>
+  </div>
+</div>
+
+<textarea id="copyta" aria-hidden="true"></textarea>
+
+<div class="wrap">
+
+  <!-- CONTEXT: 3 APPS CURRENT STATE -->
+  <div class="ctx">
+    <div class="ctx-title">Trạng thái hiện tại — 3 apps cần kết nối</div>
+    <div class="app-row">
+      <div class="app-card">
+        <div class="app-name"><span class="app-dot" style="background:#185fa5"></span>Admin Web</div>
+        <div class="app-feat">
+          <span>⚙️ Tournament management</span>
+          <span>📋 Registration flow</span>
+          <span>📊 Live scoreboard</span>
+          <span class="tag">Chưa build</span>
+        </div>
+      </div>
+      <div class="app-card">
+        <div class="app-name"><span class="app-dot" style="background:#E24B4A"></span>Referee App</div>
+        <div class="app-feat">
+          <span>⚖️ Core scoring + sideout logic</span>
+          <span>📝 Match log + undo</span>
+          <span>📊 Advanced rally stats</span>
+          <span>🖥️ Scoreboard full-screen</span>
+          <span class="tag">Standalone · no backend</span>
+        </div>
+      </div>
+      <div class="app-card">
+        <div class="app-name"><span class="app-dot" style="background:#1D9E75"></span>Athlete App</div>
+        <div class="app-feat">
+          <span>📈 DUPR estimate + stats</span>
+          <span>🌳 Skills tree (0–10)</span>
+          <span>🏥 Gear + Health tracking</span>
+          <span>🤖 AI Coach (Gemini 2.5)</span>
+          <span class="tag">Local Storage · no backend</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATA SPINE -->
+  <div class="spine">
+    <div class="spine-title">Data spine — 3 keys kết nối toàn bộ hệ thống</div>
+    <div class="spine-flow">
+      <div class="snode"><strong>Admin Web tạo</strong>tournament_id · match_id · player_id</div>
+      <div class="sarr">→</div>
+      <div class="snode"><strong>Referee App đọc + ghi</strong>match scores · rally log</div>
+      <div class="sarr">→</div>
+      <div class="snode"><strong>Admin Web xử lý</strong>bracket advance · live display</div>
+      <div class="sarr">→</div>
+      <div class="snode"><strong>Athlete App nhận</strong>match history · ranking update</div>
+    </div>
+    <div class="spine-note">
+      <b>Vấn đề hiện tại:</b> Referee App &amp; Athlete App đang chạy isolated — không có match_id, không có player_id, không có Supabase. Các decisions dưới đây giải quyết gap này.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- PHASE 1: ECOSYSTEM -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="phase">
+    <div class="phase-hd">
+      <div class="pdot" style="background:var(--red)"></div>
+      <span class="ptitle">Ecosystem Integration</span>
+      <span class="pcount">5 quyết định — block API_CONTRACT.md</span>
+    </div>
+
+    <!-- D1 -->
+    <div class="dc open" id="d1">
+      <div class="dc-hd" onclick="tog('d1')">
+        <span class="dq">1. Referee App: migrate sang Supabase hay giữ local + sync layer?</span>
+        <div class="dmeta"><span class="badge" style="background:var(--rbg);color:var(--rtx)">Critical</span><span class="sp" id="d1-p"></span><span class="chev">▼</span></div>
+      </div>
+      <div class="opts">
+        <div class="opt" onclick="pick('d1',this,'Rewrite Referee App với Supabase — match_id từ Admin Web, scores ghi thẳng vào DB','Source of truth duy nhất, realtime sync không cần glue code')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Rewrite với Supabase integration</div>
+            <div class="odsc">Referee App nhận match_id từ Admin Web → ghi scores vào Supabase → Admin Web nhận qua Supabase Realtime. Sạch nhất về architecture.</div>
+            <span class="otag" style="background:var(--gbg);color:var(--gtx)">Recommended — đã chốt Supabase Realtime</span>
+          </div>
+        </div>
+        <div class="opt" onclick="pick('d1',this,'Giữ local logic + thêm sync layer — POST score lên API khi có mạng','Tận dụng code hiện tại, thêm offline resilience')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Giữ local + thêm sync layer</div>
+            <div class="odsc">Giữ toàn bộ scoring logic hiện tại. Thêm một sync module: khi online → POST score lên Supabase. Offline-first tốt hơn.</div>
+            <span class="otag" style="background:var(--abg);color:var(--atx)">Phức tạp hơn về conflict resolution</span>
+          </div>
+        </div>
+        <div class="opt" onclick="pick('d1',this,'Adapter pattern — wrap API layer lên codebase hiện tại, không đụng scoring logic','Nhanh nhất, risk thấp nhất với code đang chạy ổn')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Adapter pattern — wrap, không rewrite</div>
+            <div class="odsc">Scoring engine giữ nguyên. Thêm một adapter nhận match context từ Admin Web và push kết quả lên Supabase sau trận.</div>
+            <span class="otag" style="background:var(--bbg);color:var(--btx)">Fastest — nhưng không thực sự realtime</span>
+          </div>
+        </div>
+        <div class="conn"><strong>Kết nối với:</strong> Referee App hiện có match log + rally stats rất chi tiết (ace, smash, kitchen fault...) — cần quyết định level detail nào được sync lên Supabase (câu hỏi 9).</div>
+        <div class="imp"><b>Ảnh hưởng:</b> API_CONTRACT.md endpoint design, DATA_SCHEMA matches table, offline sync strategy, conflict resolution khi 2 trọng tài cùng nhập.</div>
+        <div class="cmt"><div class="cmt-lbl">Ghi chú</div><textarea class="cmt-in" id="d1-c" placeholder="VD: rewrite nhưng giữ lại scoring engine (tính sideout, win condition) như một module độc lập..."></textarea></div>
+      </div>
+    </div>
+
+    <!-- D2 -->
+    <div class="dc" id="d2">
+      <div class="dc-hd" onclick="tog('d2')">
+        <span class="dq">2. Athlete App: Local Storage → Supabase — migrate toàn bộ hay hybrid?</span>
+        <div class="dmeta"><span class="badge" style="background:var(--rbg);color:var(--rtx)">Critical</span><span class="sp" id="d2-p"></span><span class="chev">▼</span></div>
+      </div>
+      <div class="opts">
+        <div class="opt" onclick="pick('d2',this,'Migrate toàn bộ sang Supabase — match history, skills, gear, health đều lên cloud','Player profile đầy đủ, DUPR tính server-side, multi-device')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Full migration → Supabase</div>
+            <div class="odsc">Tất cả data (match log, skills tree, gear, health) lên Supabase. Player đăng nhập ở đâu cũng thấy data. Admin Web đọc được skills để suggest category phù hợp.</div>
+            <span class="otag" style="background:var(--gbg);color:var(--gtx)">Recommended — unlock cross-app features</span>
+          </div>
+        </div>
+        <div class="opt" onclick="pick('d2',this,'Hybrid — match history lên Supabase, skills/gear/health giữ Local Storage','Chỉ sync cái cần thiết cho ecosystem, private data giữ local')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Hybrid — match history cloud, personal data local</div>
+            <div class="odsc">Match results sync lên Supabase. Skills tree, gear, health vẫn Local Storage — đây là data cá nhân, không cần Admin Web đọc.</div>
+            <span class="otag" style="background:var(--abg);color:var(--atx)">Đơn giản hơn, nhưng DUPR không tính được từ tournament data</span>
+          </div>
+        </div>
+        <div class="conn"><strong>Kết nối với:</strong> Athlete App tính DUPR ước tính từ skills tree — nếu migrate toàn bộ, Admin Web có thể feed tournament match results vào DUPR calculation tự động, chính xác hơn nhiều so với self-report hiện tại.</div>
+        <div class="imp"><b>Ảnh hưởng:</b> players table schema, auth (player tự đăng ký hay Admin Web tạo trước), DUPR calculation location.</div>
+        <div class="cmt"><div class="cmt-lbl">Ghi chú</div><textarea class="cmt-in" id="d2-c" placeholder="VD: migrate match history + skills, giữ gear/health local vì không liên quan đến tournament..."></textarea></div>
+      </div>
+    </div>
+
+    <!-- D3 -->
+    <div class="dc" id="d3">
+      <div class="dc-hd" onclick="tog('d3')">
+        <span class="dq">3. Shared auth: 1 Supabase account cho cả 3 apps hay auth riêng?</span>
+        <div class="dmeta"><span class="badge" style="background:var(--rbg);color:var(--rtx)">Critical</span><span class="sp" id="d3-p"></span><span class="chev">▼</span></div>
+      </div>
+      <div class="opts">
+        <div class="opt" onclick="pick('d3',this,'1 Supabase project, shared auth — JWT claim xác định role (admin / referee / athlete)','Login 1 lần dùng cả 3 app, role-based access')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Shared Supabase auth — role-based JWT</div>
+            <div class="odsc">Cùng 1 user_id xuyên suốt. JWT custom claim: <code style="font-size:10px;background:var(--sur3);padding:1px 4px;border-radius:3px">role: admin | referee | athlete</code>. RLS policy dùng role để phân quyền data.</div>
+            <span class="otag" style="background:var(--gbg);color:var(--gtx)">Recommended — đơn giản nhất cho solo builder</span>
+          </div>
+        </div>
+        <div class="opt" onclick="pick('d3',this,'Auth riêng từng app — Admin Web dùng Supabase Auth, 2 app kia auth độc lập','Isolation cao hơn nhưng user phải login nhiều chỗ')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Auth riêng từng app</div>
+            <div class="odsc">Mỗi app manage session riêng. Referee App dùng PIN/code ngắn do Admin Web cấp — không cần tài khoản đầy đủ.</div>
+            <span class="otag" style="background:var(--abg);color:var(--atx)">UX phức tạp hơn, data join khó</span>
+          </div>
+        </div>
+        <div class="opt" onclick="pick('d3',this,'Shared auth + Referee App dùng match code ngắn — không cần tài khoản cho trọng tài','Referee truy cập qua code 6 ký tự, không cần đăng ký')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Shared auth + Referee dùng match code</div>
+            <div class="odsc">Admin Web &amp; Athlete App dùng Supabase Auth đầy đủ. Referee App: Admin Web sinh code 6 ký tự → trọng tài nhập vào → truy cập match không cần account.</div>
+            <span class="otag" style="background:var(--bbg);color:var(--btx)">UX tốt nhất cho referee</span>
+          </div>
+        </div>
+        <div class="imp"><b>Ảnh hưởng:</b> AUTH_FLOW.md toàn bộ, RLS policies, user onboarding cho từng role, session management.</div>
+        <div class="cmt"><div class="cmt-lbl">Ghi chú</div><textarea class="cmt-in" id="d3-c" placeholder="VD: Referee dùng match code 6 ký tự hết hạn sau 24h, không lưu account..."></textarea></div>
+      </div>
+    </div>
+
+    <!-- D4 -->
+    <div class="dc" id="d4">
+      <div class="dc-hd" onclick="tog('d4')">
+        <span class="dq">4. Player profile: ai tạo trước — Admin Web hay Athlete tự đăng ký?</span>
+        <div class="dmeta"><span class="badge" style="background:var(--abg);color:var(--atx)">Important</span><span class="sp" id="d4-p"></span><span class="chev">▼</span></div>
+      </div>
+      <div class="opts">
+        <div class="opt" onclick="pick('d4',this,'Admin Web tạo player profile khi đăng ký giải → Athlete App claim bằng email/phone','Admin is source of truth, athlete link vào sau')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Admin Web tạo trước → Athlete claim sau</div>
+            <div class="odsc">BTC nhập danh sách VĐV khi tạo giải. Mỗi VĐV nhận email/SMS với link claim profile. Athlete App link vào profile đó.</div>
+            <span class="otag" style="background:var(--gbg);color:var(--gtx)">Recommended — Admin kiểm soát tournament roster</span>
+          </div>
+        </div>
+        <div class="opt" onclick="pick('d4',this,'Athlete tự đăng ký → BTC invite vào giải — bottom-up approach','VĐV chủ động, nhưng BTC mất kiểm soát roster')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Athlete tự đăng ký → BTC approve</div>
+            <div class="odsc">VĐV tự tạo profile trên Athlete App. BTC tìm kiếm và invite vào giải. Linh hoạt hơn nhưng BTC khó quản lý roster.</div>
+            <span class="otag" style="background:var(--abg);color:var(--atx)">Mất kiểm soát eligibility</span>
+          </div>
+        </div>
+        <div class="conn"><strong>Kết nối với:</strong> Athlete App hiện có player name nhưng không có player_id. Referee App cũng chỉ có tên — không có ID. Sau khi có shared player_id, Referee App tự động biết tên VĐV từ Admin Web, không cần nhập lại.</div>
+        <div class="imp"><b>Ảnh hưởng:</b> players table, registration flow, invite system, how Referee App gets player names.</div>
+        <div class="cmt"><div class="cmt-lbl">Ghi chú</div><textarea class="cmt-in" id="d4-c" placeholder="VD: Admin nhập số điện thoại → VĐV nhận SMS link claim → nếu không claim thì vẫn thi đấu được, chỉ không có Athlete App data..."></textarea></div>
+      </div>
+    </div>
+
+    <!-- D5 -->
+    <div class="dc" id="d5">
+      <div class="dc-hd" onclick="tog('d5')">
+        <span class="dq">5. DUPR / ranking: tính ở đâu?</span>
+        <div class="dmeta"><span class="badge" style="background:var(--abg);color:var(--atx)">Important</span><span class="sp" id="d5-p"></span><span class="chev">▼</span></div>
+      </div>
+      <div class="opts">
+        <div class="opt" onclick="pick('d5',this,'Supabase Edge Function — tính sau mỗi trận từ tournament match results','Chính xác hơn, dùng kết quả thực từ Admin Web')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Supabase Edge Function — server-side</div>
+            <div class="odsc">Trigger sau khi Referee App submit score → Edge Function tính DUPR delta → cập nhật players.rating. Accurate hơn nhiều so với self-report skills.</div>
+            <span class="otag" style="background:var(--gbg);color:var(--gtx)">Recommended — dùng real match data</span>
+          </div>
+        </div>
+        <div class="opt" onclick="pick('d5',this,'Giữ trong Athlete App — skills tree self-assessment như hiện tại, tournament chỉ feed thêm data','Đơn giản hơn, athlete tự control')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Giữ trong Athlete App — self-assessment</div>
+            <div class="odsc">Skills tree 0–10 như hiện tại. Tournament match results được import vào Athlete App để làm đầu vào tính DUPR estimate, nhưng logic vẫn client-side.</div>
+          </div>
+        </div>
+        <div class="conn"><strong>Kết nối với:</strong> Athlete App hiện tính DUPR ước tính từ skills tree completion rate. Nếu dùng Edge Function với real match data (win/loss vs. rated opponents), DUPR estimate sẽ sát với DUPR chính thức hơn nhiều — đây là differentiator lớn.</div>
+        <div class="imp"><b>Ảnh hưởng:</b> players.rating column, Edge Function trigger design, Athlete App dashboard display.</div>
+        <div class="cmt"><div class="cmt-lbl">Ghi chú</div><textarea class="cmt-in" id="d5-c" placeholder="VD: Edge Function dùng Elo-based algorithm tương tự DUPR, update sau mỗi match completion..."></textarea></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- PHASE 2: TECH STACK -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="phase">
+    <div class="phase-hd">
+      <div class="pdot" style="background:var(--amb)"></div>
+      <span class="ptitle">Tech Stack Unification</span>
+      <span class="pcount">4 quyết định — cần trước khi code</span>
+    </div>
+
+    <!-- D6 -->
+    <div class="dc" id="d6">
+      <div class="dc-hd" onclick="tog('d6')">
+        <span class="dq">6. Admin Web frontend: Next.js hay React SPA (Vite)?</span>
+        <div class="dmeta"><span class="badge" style="background:var(--abg);color:var(--atx)">Important</span><span class="sp" id="d6-p"></span><span class="chev">▼</span></div>
+      </div>
+      <div class="opts">
+        <div class="opt" onclick="pick('d6',this,'Next.js App Router — SSR cho public pages, Vercel-native','SEO cho public scoreboard + bracket pages, deploy zero-config')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Next.js App Router</div>
+            <div class="odsc">Public pages (scoreboard, bracket) SSR cho SEO. Admin dashboard client-side. OBS overlay là static route. Vercel deploy zero-config.</div>
+            <span class="otag" style="background:var(--gbg);color:var(--gtx)">Recommended — SEO critical cho public scoreboard</span>
+          </div>
+        </div>
+        <div class="opt" onclick="pick('d6',this,'React SPA + Vite — đơn giản hơn, không cần SSR','Nhanh hơn để build, đủ nếu không cần SEO')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">React SPA + Vite</div>
+            <div class="odsc">Đơn giản hơn, không có SSR. Phù hợp nếu public scoreboard không cần SEO (chỉ share link, không cần index).</div>
+            <span class="otag" style="background:var(--abg);color:var(--atx)">OBS overlay cần workaround cho SEO</span>
+          </div>
+        </div>
+        <div class="imp"><b>Ảnh hưởng:</b> Routing structure, deployment config, public embed URL pattern cho OBS overlay.</div>
+        <div class="cmt"><div class="cmt-lbl">Ghi chú</div><textarea class="cmt-in" id="d6-c" placeholder="VD: Next.js, route /overlay/[match-id] là static HTML không cần auth, prefect cho OBS browser source..."></textarea></div>
+      </div>
+    </div>
+
+    <!-- D7 -->
+    <div class="dc" id="d7">
+      <div class="dc-hd" onclick="tog('d7')">
+        <span class="dq">7. Referee App rewrite: giữ React (hiện tại) hay chuyển framework?</span>
+        <div class="dmeta"><span class="badge" style="background:var(--abg);color:var(--atx)">Important</span><span class="sp" id="d7-p"></span><span class="chev">▼</span></div>
+      </div>
+      <div class="opts">
+        <div class="opt" onclick="pick('d7',this,'Giữ React + thêm Supabase client — align với Admin Web, tái dụng components','Ít disruptive nhất, React ecosystem nhất quán')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Giữ React + add Supabase client</div>
+            <div class="odsc">Codebase hiện tại (React, TypeScript) giữ nguyên. Thêm Supabase JS client. Scoring engine tái dụng hoàn toàn, chỉ thêm sync layer.</div>
+            <span class="otag" style="background:var(--gbg);color:var(--gtx)">Recommended — least disruption</span>
+          </div>
+        </div>
+        <div class="opt" onclick="pick('d7',this,'Rewrite thành PWA standalone — offline-first, install được như native app','Touch UX tốt hơn cho trọng tài, hoạt động khi mất mạng')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Rewrite thành PWA</div>
+            <div class="odsc">Service worker cho offline, add-to-home-screen. Trọng tài dùng như native app. Vẫn React nhưng thêm PWA config.</div>
+            <span class="otag" style="background:var(--bbg);color:var(--btx)">+1 tuần — đáng làm vì sân hay mất mạng</span>
+          </div>
+        </div>
+        <div class="conn"><strong>Kết nối với:</strong> Referee App hiện có scoreboard full-screen view (mở tab mới) — đây chính là OBS overlay. Cần giữ feature này và expose nó qua URL pattern <code style="font-size:10px;background:var(--sur3);padding:1px 4px;border-radius:3px">/overlay/{match_id}</code> có Supabase Realtime.</div>
+        <div class="imp"><b>Ảnh hưởng:</b> Component sharing với Admin Web, offline queue strategy, PWA manifest.</div>
+        <div class="cmt"><div class="cmt-lbl">Ghi chú</div><textarea class="cmt-in" id="d7-c" placeholder="VD: PWA với Workbox, queue score submissions khi offline, sync khi có mạng lại..."></textarea></div>
+      </div>
+    </div>
+
+    <!-- D8 -->
+    <div class="dc" id="d8">
+      <div class="dc-hd" onclick="tog('d8')">
+        <span class="dq">8. Athlete App rewrite: giữ React 19 + Local Storage hay migrate sang Supabase?</span>
+        <div class="dmeta"><span class="badge" style="background:var(--abg);color:var(--atx)">Important</span><span class="sp" id="d8-p"></span><span class="chev">▼</span></div>
+      </div>
+      <div class="opts">
+        <div class="opt" onclick="pick('d8',this,'Giữ React 19 + thay Local Storage bằng Supabase client — minimal rewrite','Codebase ổn định, chỉ swap storage layer')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Giữ codebase + swap storage layer</div>
+            <div class="odsc">Tất cả UI/UX components giữ nguyên. Thay <code style="font-size:10px;background:var(--sur3);padding:1px 4px;border-radius:3px">localStorage.getItem/setItem</code> bằng Supabase queries. Recharts giữ, chỉ data source thay đổi.</div>
+            <span class="otag" style="background:var(--gbg);color:var(--gtx)">Recommended — codebase hiện tại khá tốt</span>
+          </div>
+        </div>
+        <div class="opt" onclick="pick('d8',this,'Rewrite thành React Native (Expo) — native mobile UX cho athlete','UX tốt hơn nhiều trên điện thoại, nhưng scope lớn hơn')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Rewrite → React Native / Expo</div>
+            <div class="odsc">Native mobile app cho iOS/Android. VĐV có push notification thực sự. Nhưng cần build/publish lên App Store — scope lớn hơn nhiều.</div>
+            <span class="otag" style="background:var(--abg);color:var(--atx)">v2+ — sau khi validate web version</span>
+          </div>
+        </div>
+        <div class="conn"><strong>Kết nối với:</strong> Athlete App có AI Coach dùng Gemini 2.5 phân tích 10 trận gần nhất + skills profile. Sau khi migrate sang Supabase, AI Coach có thể access tournament match results thực tế (từ Referee App) thay vì chỉ self-reported data — coaching quality tăng đáng kể.</div>
+        <div class="imp"><b>Ảnh hưởng:</b> Storage abstraction layer, Gemini API key management, Recharts data source.</div>
+        <div class="cmt"><div class="cmt-lbl">Ghi chú</div><textarea class="cmt-in" id="d8-c" placeholder="VD: tạo một useStorage hook wrap Supabase, easy to swap back to localStorage for testing..."></textarea></div>
+      </div>
+    </div>
+
+    <!-- D9 -->
+    <div class="dc" id="d9">
+      <div class="dc-hd" onclick="tog('d9')">
+        <span class="dq">9. Gemini AI Coach: giữ client-side hay chuyển sang Supabase Edge Function?</span>
+        <div class="dmeta"><span class="badge" style="background:var(--abg);color:var(--atx)">Important</span><span class="sp" id="d9-p"></span><span class="chev">▼</span></div>
+      </div>
+      <div class="opts">
+        <div class="opt" onclick="pick('d9',this,'Edge Function — API key an toàn, access được tournament data từ Supabase','Bảo mật hơn, coaching quality cao hơn với full context')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Supabase Edge Function</div>
+            <div class="odsc">Gemini API key ở server, không expose client. Edge Function query tournament history + skills + rally stats → gửi full context cho Gemini → trả về coaching report.</div>
+            <span class="otag" style="background:var(--gbg);color:var(--gtx)">Recommended — key security + richer context</span>
+          </div>
+        </div>
+        <div class="opt" onclick="pick('d9',this,'Giữ client-side — đơn giản, không cần Edge Function','API key expose trong app, nhưng context bị giới hạn local data')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Giữ client-side như hiện tại</div>
+            <div class="odsc">@google/genai SDK chạy trên browser. Đơn giản, không infra thêm. Nhưng API key dễ bị lấy, và chỉ có local data.</div>
+            <span class="otag" style="background:var(--abg);color:var(--atx)">API key risk — không nên dùng production</span>
+          </div>
+        </div>
+        <div class="conn"><strong>Kết nối với:</strong> Hiện tại Gemini chỉ thấy 10 trận self-reported + skills self-assessment. Sau khi migrate: Gemini thấy được toàn bộ tournament match log từ Referee App (rally-by-rally detail: ace, kitchen fault, unforced error...) — đây là coaching data quality ở level khác hoàn toàn.</div>
+        <div class="imp"><b>Ảnh hưởng:</b> Gemini API key storage, Edge Function cost (Deno runtime), prompt engineering với richer context.</div>
+        <div class="cmt"><div class="cmt-lbl">Ghi chú</div><textarea class="cmt-in" id="d9-c" placeholder="VD: Edge Function nhận player_id → query last 20 tournament matches + rally stats → build prompt → return coaching JSON..."></textarea></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- PHASE 3: FEATURE OWNERSHIP -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="phase">
+    <div class="phase-hd">
+      <div class="pdot" style="background:var(--pur)"></div>
+      <span class="ptitle">Feature Ownership &amp; Data Sync</span>
+      <span class="pcount">3 quyết định — ảnh hưởng DATA_SCHEMA</span>
+    </div>
+
+    <!-- D10 -->
+    <div class="dc" id="d10">
+      <div class="dc-hd" onclick="tog('d10')">
+        <span class="dq">10. Rally detail level: Referee App sync bao nhiêu lên Supabase?</span>
+        <div class="dmeta"><span class="badge" style="background:var(--pbg);color:var(--ptx)">Schema</span><span class="sp" id="d10-p"></span><span class="chev">▼</span></div>
+      </div>
+      <div class="opts">
+        <div class="opt" onclick="pick('d10',this,'Full rally log — mọi pha bóng với outcome type, rally reason, player responsible','AI Coach có full context, stats dashboard chi tiết')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Full rally log sync</div>
+            <div class="odsc">Sync toàn bộ: score, serve tracking, outcome (winner/error), rally reason (ace/smash/kitchen fault...), player responsible. Đây là data Referee App đang collect.</div>
+            <span class="otag" style="background:var(--gbg);color:var(--gtx)">Recommended — đây là competitive moat</span>
+          </div>
+        </div>
+        <div class="opt" onclick="pick('d10',this,'Chỉ sync final score + serve log — đủ cho bracket advance và live display','Đơn giản hơn, schema nhỏ hơn')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Chỉ sync final score + serve sequence</div>
+            <div class="odsc">Admin Web chỉ cần score để advance bracket. Rally detail giữ local trong Referee App, không sync. Đơn giản hơn nhiều.</div>
+            <span class="otag" style="background:var(--abg);color:var(--atx)">Mất đi AI coaching advantage</span>
+          </div>
+        </div>
+        <div class="conn"><strong>Kết nối với:</strong> Referee App hiện collect: ace, smash, volley, drive, drop, ATP, erne, lob, passing shot, unforced error, net error, out, service fault, kitchen fault — đây là data cực kỳ giá trị cho AI Coach. Nếu sync đầy đủ, Athlete App có player-level stats không thua gì hệ thống chuyên nghiệp.</div>
+        <div class="imp"><b>Ảnh hưởng:</b> rally_events table design, storage cost per match, AI Coach prompt quality.</div>
+        <div class="cmt"><div class="cmt-lbl">Ghi chú</div><textarea class="cmt-in" id="d10-c" placeholder="VD: sync full rally log nhưng chỉ khi có Detailed Scoring mode bật, otherwise chỉ sync score..."></textarea></div>
+      </div>
+    </div>
+
+    <!-- D11 -->
+    <div class="dc" id="d11">
+      <div class="dc-hd" onclick="tog('d11')">
+        <span class="dq">11. Skills tree: personal-only hay Admin Web cũng đọc được?</span>
+        <div class="dmeta"><span class="badge" style="background:var(--pbg);color:var(--ptx)">Schema</span><span class="sp" id="d11-p"></span><span class="chev">▼</span></div>
+      </div>
+      <div class="opts">
+        <div class="opt" onclick="pick('d11',this,'Personal-only — skills tree là data cá nhân, Admin Web không đọc','RLS: chỉ player tự thấy skills của mình')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Personal-only — chỉ athlete thấy</div>
+            <div class="odsc">Skills tree là self-assessment cá nhân, private. Admin Web không đọc được. Phù hợp với privacy expectation của VĐV.</div>
+            <span class="otag" style="background:var(--gbg);color:var(--gtx)">Recommended — privacy tốt hơn</span>
+          </div>
+        </div>
+        <div class="opt" onclick="pick('d11',this,'Admin có thể đọc skill level để suggest event category phù hợp — với consent VĐV','BTC biết VĐV nào ở skill level nào để xếp bảng hợp lý')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Admin đọc được skill level (có consent)</div>
+            <div class="odsc">VĐV cho phép chia sẻ estimated rating với BTC. BTC thấy skill level để xếp vào bảng phù hợp (beginner/intermediate/advanced).</div>
+            <span class="otag" style="background:var(--bbg);color:var(--btx)">Useful cho skill-based seeding</span>
+          </div>
+        </div>
+        <div class="imp"><b>Ảnh hưởng:</b> player_skills table RLS policy, consent flow trong Athlete App, seeding algorithm trong Admin Web.</div>
+        <div class="cmt"><div class="cmt-lbl">Ghi chú</div><textarea class="cmt-in" id="d11-c" placeholder="VD: player có toggle 'chia sẻ skill rating với BTC', mặc định off..."></textarea></div>
+      </div>
+    </div>
+
+    <!-- D12 -->
+    <div class="dc" id="d12">
+      <div class="dc-hd" onclick="tog('d12')">
+        <span class="dq">12. Shared component library: build một lib chung hay mỗi app tự manage?</span>
+        <div class="dmeta"><span class="badge" style="background:var(--pbg);color:var(--ptx)">Dev</span><span class="sp" id="d12-p"></span><span class="chev">▼</span></div>
+      </div>
+      <div class="opts">
+        <div class="opt" onclick="pick('d12',this,'Mỗi app tự manage — copy khi cần, không có shared lib overhead','Đơn giản nhất cho solo builder, không cần monorepo')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Mỗi app tự manage — no shared lib</div>
+            <div class="odsc">Copy component khi cần. Không setup monorepo, không npm link. 3 repos riêng hoặc 3 folders trong 1 repo.</div>
+            <span class="otag" style="background:var(--gbg);color:var(--gtx)">Recommended — solo builder, đừng over-engineer</span>
+          </div>
+        </div>
+        <div class="opt" onclick="pick('d12',this,'Monorepo (Turborepo) + shared packages/ui — một lần viết, dùng cả 3 app','DRY tốt hơn, nhưng setup overhead đáng kể')">
+          <div class="ora"><div class="ord"></div></div>
+          <div class="otx">
+            <div class="olbl">Monorepo + shared packages/ui</div>
+            <div class="odsc">Turborepo hoặc pnpm workspace. Shared: UI components, Supabase types, scoring utils. Nhất quán hơn về design system.</div>
+            <span class="otag" style="background:var(--abg);color:var(--atx)">+3–5 ngày setup, justify khi team lớn hơn</span>
+          </div>
+        </div>
+        <div class="conn"><strong>Kết nối với:</strong> Referee App hiện có Tailwind CSS + Recharts (giống Athlete App). Scoreboard component của Referee App có thể tái dụng trực tiếp trong Admin Web cho live display — dù không có shared lib, cần đảm bảo styling compatible.</div>
+        <div class="imp"><b>Ảnh hưởng:</b> Repo structure, CI/CD setup, deployment pipeline, design system consistency.</div>
+        <div class="cmt"><div class="cmt-lbl">Ghi chú</div><textarea class="cmt-in" id="d12-c" placeholder="VD: 1 monorepo với 3 app folders + packages/supabase-types, packages/scoring-engine..."></textarea></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DONE BANNER -->
+  <div class="done" id="done">
+    <h2>✓ Đã chốt tất cả 12 quyết định ecosystem</h2>
+    <p>Nhấn "Export .md" ở trên để lấy DECISIONS_ECOSYSTEM.md</p>
+  </div>
+
+  <!-- EXPORT PANEL (inline, no fixed positioning) -->
+  <div class="expanel" id="expanel">
+    <div class="expanel-hd">
+      <h3>Preview — DECISIONS_ECOSYSTEM.md</h3>
+      <div class="exp-acts">
+        <span class="copy-ok" id="copy-ok">✓ Đã copy!</span>
+        <button class="ebtn" onclick="copyMD()">Copy nội dung</button>
+        <button class="ebtn ebtn-p" onclick="dlMD()">Tải xuống .md</button>
+      </div>
+    </div>
+    <pre class="mdpre" id="mdpre"></pre>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+const S={}, N=12;
+
+const QS={
+  d1:'Referee App migration strategy',
+  d2:'Athlete App migration strategy',
+  d3:'Shared auth design',
+  d4:'Player profile ownership',
+  d5:'DUPR / ranking calculation location',
+  d6:'Admin Web frontend framework',
+  d7:'Referee App rewrite scope',
+  d8:'Athlete App rewrite scope',
+  d9:'Gemini AI Coach location',
+  d10:'Rally detail sync level',
+  d11:'Skills tree visibility',
+  d12:'Shared component library'
+};
+
+const IMP={
+  d1:'API_CONTRACT.md endpoint design, DATA_SCHEMA matches table, offline sync strategy',
+  d2:'players table schema, auth flow, DUPR calculation location',
+  d3:'AUTH_FLOW.md, RLS policies, user onboarding per role',
+  d4:'players table, registration flow, how Referee App gets player names',
+  d5:'players.rating column, Edge Function design, Athlete App dashboard',
+  d6:'Routing structure, SSR for public pages, OBS overlay URL pattern',
+  d7:'Component sharing, PWA manifest, offline queue strategy',
+  d8:'Storage abstraction layer, Gemini data source, Recharts data',
+  d9:'API key security, Edge Function cost, prompt context quality',
+  d10:'rally_events table schema, storage cost, AI coaching quality',
+  d11:'player_skills RLS policy, consent flow, seeding algorithm',
+  d12:'Repo structure, CI/CD pipeline, design system consistency'
+};
+
+function tog(id){
+  document.getElementById(id).classList.toggle('open');
+}
+
+function pick(id, el, value, desc){
+  S[id]={value, desc};
+  el.closest('.opts').querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel');
+  const card=document.getElementById(id);
+  card.classList.add('answered');
+  const p=document.getElementById(id+'-p');
+  if(p) p.textContent=value.split(' — ')[0].substring(0,22);
+  upd();
+  card.classList.remove('open');
+  const n=parseInt(id.replace('d',''));
+  if(n<N){
+    const nx=document.getElementById('d'+(n+1));
+    if(nx&&!nx.classList.contains('answered')) nx.classList.add('open');
+  }
+}
+
+function upd(){
+  const c=Object.keys(S).length;
+  document.getElementById('pfill').style.width=(c/N*100)+'%';
+  document.getElementById('plbl').textContent=c+' / '+N;
+  document.getElementById('cnt').textContent=c;
+  document.getElementById('xbtn').disabled=(c<N);
+  if(c===N){
+    document.getElementById('done').classList.add('show');
+  }
+}
+
+function getCmt(id){
+  const el=document.getElementById(id+'-c');
+  return el ? el.value.trim() : '';
+}
+
+function genMD(){
+  const d=new Date().toISOString().split('T')[0];
+  let m='# DECISIONS_ECOSYSTEM.md — Pickleball OS\n\n';
+  m+='> Ecosystem integration & tech stack decisions\n';
+  m+='> Chốt ngày '+d+' | SongHa / BSMlabs\n';
+  m+='> Đọc cùng với: DECISIONS.md (product decisions đã locked)\n\n---\n\n';
+
+  m+='## Context: Trạng thái 3 apps trước khi integrate\n\n';
+  m+='| App | Stack hiện tại | Gap cần giải quyết |\n';
+  m+='|---|---|---|\n';
+  m+='| Admin Web | Chưa build | Source of truth cần build |\n';
+  m+='| Referee App | React, standalone, no backend | Cần match_id + Supabase sync |\n';
+  m+='| Athlete App | React 19, Local Storage, Gemini client-side | Cần Supabase + player_id |\n\n';
+  m+='**Data spine:** `tournament_id` → `match_id` → `player_id` xuyên suốt cả 3 app\n\n---\n\n';
+
+  const phases=[
+    {label:'🔴 Ecosystem Integration',ids:['d1','d2','d3','d4','d5']},
+    {label:'🟡 Tech Stack Unification',ids:['d6','d7','d8','d9']},
+    {label:'🟣 Feature Ownership & Data Sync',ids:['d10','d11','d12']}
+  ];
+
+  phases.forEach(ph=>{
+    m+='## '+ph.label+'\n\n';
+    ph.ids.forEach(id=>{
+      const s=S[id]; if(!s) return;
+      m+='### '+QS[id]+'\n\n';
+      m+='**Quyết định:** '+s.value+'\n\n';
+      m+='**Lý do:** '+s.desc+'\n\n';
+      m+='**Ảnh hưởng tới:** '+IMP[id]+'\n\n';
+      const c=getCmt(id);
+      if(c) m+='**Ghi chú:** '+c+'\n\n';
+    });
+  });
+
+  m+='---\n\n## Bước tiếp theo (kết hợp với DECISIONS.md)\n\n';
+  m+='1. `DATA_SCHEMA.md` — tables: tournaments, matches, players, rally_events, player_skills, orgs\n';
+  m+='2. `API_CONTRACT.md` — Admin Web ↔ Referee App ↔ Athlete App endpoints\n';
+  m+='3. `AUTH_FLOW.md` — Supabase auth + RLS policies + referee match code flow\n';
+  m+='4. `PRD.md` — full product requirements\n';
+  m+='5. `MIGRATION_PLAN.md` — Referee App + Athlete App migration steps\n';
+
+  return m;
+}
+
+function showExport(){
+  const md=genMD();
+  document.getElementById('mdpre').textContent=md;
+  const panel=document.getElementById('expanel');
+  panel.classList.add('show');
+  setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}),80);
+}
+
+function copyMD(){
+  const md=genMD();
+  // Use textarea trick for broad compatibility
+  const ta=document.getElementById('copyta');
+  ta.value=md;
+  ta.style.position='fixed';
+  ta.style.top='0';
+  ta.style.left='0';
+  ta.style.opacity='1';
+  ta.focus();
+  ta.select();
+  ta.setSelectionRange(0,999999);
+  let ok=false;
+  try{ ok=document.execCommand('copy'); }catch(e){}
+  ta.style.position='absolute';
+  ta.style.opacity='0';
+  if(!ok && navigator.clipboard){
+    navigator.clipboard.writeText(md).catch(()=>{});
+  }
+  const okEl=document.getElementById('copy-ok');
+  okEl.classList.add('show');
+  setTimeout(()=>okEl.classList.remove('show'),2500);
+}
+
+function dlMD(){
+  const md=genMD();
+  // data URI approach — works in file:// and http://
+  const uri='data:text/plain;charset=utf-8,'+encodeURIComponent(md);
+  const a=document.createElement('a');
+  a.href=uri;
+  a.download='DECISIONS_ECOSYSTEM.md';
+  a.style.cssText='position:absolute;opacity:0;pointer-events:none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>document.body.removeChild(a),200);
+}
+</script>
+</body>
+</html>
