@@ -204,6 +204,8 @@ const App = (() => {
     dgRemoveUpload(i) { DG.removeUpload(i); },
     dgSkipWithUploads() { DG.skipWithUploads(); },
     dgExpandQ(secId) { DG.expandQ(secId); },
+    dgAutoFix(k, idx) { DG.autoFixDoc(k, idx); },
+    dgEditDoc(k) { DG.editDoc(k); },
 
     // ── Exposed utils for inline handlers ──
     esc,

@@ -364,6 +364,16 @@ input,textarea,select,button{font-family:inherit;font-size:inherit}
 .dg-complete-card-size{font-size:10px;color:var(--tx3)}
 .dg-complete-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 
+/* CROSS-CHECK ACTIONS */
+.dg-cc-issue{display:flex;flex-direction:column;gap:8px}
+.dg-cc-actions{display:flex;gap:6px;justify-content:flex-end;margin-top:4px}
+
+/* FIX HINTS BANNER */
+.dg-fix-banner{background:var(--abg);border:1px solid var(--amb);border-radius:var(--r);padding:10px 14px;margin-bottom:14px}
+.dg-fix-banner-title{font-size:12px;font-weight:600;color:var(--amb);margin-bottom:6px}
+.dg-fix-hint{padding:6px 0;border-top:1px solid rgba(255,165,0,.15)}
+.dg-fix-hint:first-of-type{border-top:none}
+
 /* ── IMPACT MAP ── */
 .im-wrap{display:flex;flex-direction:column;height:100%;min-height:0}
 .im-toolbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:0.5px solid var(--bd);background:var(--sur);flex-shrink:0}

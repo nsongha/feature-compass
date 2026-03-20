@@ -122,6 +122,9 @@ const I18nModule = (() => {
       dgDocsCompleted: 'docs completed', dgCopy: 'Copy', dgDownload: 'Download', dgRegenerate: '↻ Regenerate',
       dgAllDone: 'All Documents Generated!', dgDocFiles: 'documents', dgTotal: 'total',
       dgStepLocked: 'Complete previous step first',
+      dgFixNeeded: 'Changes needed based on cross-check', dgFixed: 'fixed!',
+      dgEditToFix: 'Edit answers to fix this issue', dgAutoFixHint: 'AI will regenerate this doc with the fix applied',
+      dgGeneratingQs: 'Generating questions',
       // Impact Map
       pageImpactMap: '🗺️ Impact Map',
       imTitle: 'Document Impact Map',
@@ -258,6 +261,9 @@ const I18nModule = (() => {
       dgDocsCompleted: 'docs hoàn tất', dgCopy: 'Copy', dgDownload: 'Tải', dgRegenerate: '↻ Tạo lại',
       dgAllDone: 'Tất cả tài liệu đã hoàn thành!', dgDocFiles: 'tài liệu', dgTotal: 'tổng',
       dgStepLocked: 'Hoàn thành bước trước đã',
+      dgFixNeeded: 'Cần thay đổi theo kết quả cross-check', dgFixed: 'đã sửa!',
+      dgEditToFix: 'Sửa lựa chọn để fix vấn đề này', dgAutoFixHint: 'AI sẽ tạo lại doc với bản fix',
+      dgGeneratingQs: 'Đang tạo câu hỏi',
       // Impact Map
       pageImpactMap: '🗺️ Bản đồ ảnh hưởng',
       imTitle: 'Bản đồ ảnh hưởng tài liệu',

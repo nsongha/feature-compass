@@ -285,6 +285,17 @@ const DocgenModule = (() => {
     let html = `<div style="font-size:15px;font-weight:600;margin-bottom:3px">${dt?.icon || ''} ${doc.title || dt?.name}</div>
       <div style="font-size:11px;color:var(--tx2);margin-bottom:14px">${sections.length} ${esc(t('dgDecisions'))}</div>`;
 
+    // Show fix hints from cross-check if present
+    if (doc._fixHints?.length) {
+      html += `<div class="dg-fix-banner">
+        <div class="dg-fix-banner-title">\u26a0\ufe0f ${esc(t('dgFixNeeded'))}</div>
+        ${doc._fixHints.map(h => `<div class="dg-fix-hint">
+          <div style="font-size:12px">${esc(h.description)}</div>
+          ${h.suggestion ? `<div style="font-size:11px;color:var(--tx2)">\ud83d\udca1 ${esc(h.suggestion)}</div>` : ''}
+        </div>`).join('')}
+      </div>`;
+    }
+
     sections.forEach((sec, i) => {
       const answered = doc.answers[sec.id] != null;
       const isExpanded = !answered || i === firstUnanswered || d._expandedQ === sec.id;
@@ -413,13 +424,22 @@ const DocgenModule = (() => {
           <div style="font-size:11px;color:var(--tx2);margin-top:6px">${issues.length} issues</div>
         </div>
         ${issues.length === 0 ? `<div class="sec" style="max-width:640px"><span style="color:var(--grn)">✅</span> ${esc(t('dgAllConsistent'))}</div>` : ''}
-        ${issues.map(i => `<div class="sec" style="max-width:640px;display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.5">
-          <span style="${cls[i.severity] || ''}">${icons[i.severity] || '•'}</span>
-          <div style="flex:1">
-            <strong>${esc(i.doc || '')}</strong> — ${esc(i.description || '')}
-            ${i.suggestion ? `<div style="font-size:11px;color:var(--tx2);margin-top:2px">💡 ${esc(i.suggestion)}</div>` : ''}
-          </div>
-        </div>`).join('')}`;
+        ${issues.map((issue, idx) => {
+          const docKey = findDocKeyByName(issue.doc);
+          return `<div class="sec dg-cc-issue" style="max-width:640px">
+            <div style="display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.5">
+              <span style="${cls[issue.severity] || ''}">${icons[issue.severity] || '•'}</span>
+              <div style="flex:1">
+                <strong>${esc(issue.doc || '')}</strong> — ${esc(issue.description || '')}
+                ${issue.suggestion ? `<div style="font-size:11px;color:var(--tx2);margin-top:2px">💡 ${esc(issue.suggestion)}</div>` : ''}
+              </div>
+            </div>
+            ${docKey ? `<div class="dg-cc-actions">
+              <button class="btn-s" onclick="App.dgEditDoc('${docKey}')">✏️ ${esc(t('imEdit'))}</button>
+              <button class="btn-s btn-p" onclick="App.dgAutoFix('${docKey}', ${idx})">🔧 Auto-fix</button>
+            </div>` : ''}
+          </div>`;
+        }).join('')}`;
     } else {
       resultHtml = `<div class="empty-state" style="height:30vh"><p>${esc(t('dgCrossCheckHint'))}</p></div>`;
     }
@@ -428,10 +448,7 @@ const DocgenModule = (() => {
       ${resultHtml}
       <div style="display:flex;gap:8px;justify-content:space-between;margin-top:16px;max-width:640px">
         <button class="btn-s" onclick="App.dgGoStep(3)">← ${esc(t('dgBuilder'))}</button>
-        <div style="display:flex;gap:8px">
-          <button class="btn-s btn-p" onclick="App.dgRunCrossCheck()" id="dg-btn-crosscheck" ${!hasDocs?'disabled':''}>${esc(t('dgRunCheck'))}</button>
-          <button class="btn-s btn-gold" onclick="App.dgGoStep(5)">${esc(t('dgExport'))} →</button>
-        </div>
+        <button class="btn-s btn-p" onclick="App.dgRunCrossCheck()" id="dg-btn-crosscheck" ${!hasDocs?'disabled':''}>${esc(t('dgRunCheck'))}</button>
       </div>
     `;
   }
