@@ -164,13 +164,3 @@ location.reload()
 ```
 
 Consider adding periodic export functionality for production deployments.
-
----
-
-## See Also
-
-- [Architecture](./ARCHITECTURE.md) — Understand the system before deploying
-- [Security](./SECURITY.md) — CSP headers and HTTPS requirements
-- [Known Issues](./KNOWN_ISSUES.md) — localStorage limits and other production concerns
-- [Changelog](./CHANGELOG.md) — What changed in each release
-

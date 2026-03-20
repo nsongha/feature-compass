@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Git Commit Rule** (`.agents/rules/git-commit.md`): quy tắc chi tiết cho commit messages — format, body requirements, ví dụ tốt/xấu
+- **CHANGELOG + docs update steps** trong `task-completion.md` workflow (steps 4-5)
+
+---
+
 ## [1.0.0] — 2026-03-20
 
 ### Added
@@ -29,13 +37,3 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **JSON Repair**: Iterative repair for truncated AI responses
 - **XSS Protection**: HTML escaping via `esc()` utility function
 - **Production Documentation**: README, Architecture, User Guide, API Reference, Deployment, Contributing, Security, Changelog
-
----
-
-## See Also
-
-- [User Guide](./USER_GUIDE.md) — How to use these features
-- [Architecture](./ARCHITECTURE.md) — Technical details behind the features
-- [Deployment](./DEPLOYMENT.md) — How to deploy each release
-- [Contributing](./CONTRIBUTING.md) — How to contribute to future releases
-

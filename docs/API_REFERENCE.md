@@ -226,13 +226,3 @@ Translations are stored in the `I18N` object with two locales: `en` (English) an
 | Smart Context | `relevantTo`, `affectedDecisions`, `relatedFeatures` |
 
 Access any key via `App.t('keyName')`.
-
----
-
-## See Also
-
-- [Architecture](./ARCHITECTURE.md) — System design, state schema, verdict algorithm
-- [User Guide](./USER_GUIDE.md) — End-user workflow and feature walkthrough
-- [Contributing](./CONTRIBUTING.md) — Code conventions for extending the API
-- [Security](./SECURITY.md) — API key handling and XSS protection details
-

@@ -158,14 +158,3 @@ Click **All Project Context →** to see the full unfiltered context.
 3. **Write detailed descriptions** — "Add dark mode" gives poor results. "Add system-aware dark mode toggle with user preference persistence for our React dashboard" is much better
 4. **Re-evaluate after context changes** — If you update project docs, re-evaluate existing ideas for updated analysis
 5. **Use Notes liberally** — AI doesn't know about budget constraints, team politics, or strategic pivots
-
----
-
-## See Also
-
-- [Architecture](./ARCHITECTURE.md) — How the verdict algorithm and context extraction work under the hood
-- [API Reference](./API_REFERENCE.md) — Full list of App methods, AI schemas, and verdict rules
-- [Deployment](./DEPLOYMENT.md) — How to deploy Feature Compass to production
-- [Security](./SECURITY.md) — Data privacy and API key security model
-- [Known Issues](./KNOWN_ISSUES.md) — Known limitations and workarounds
-
